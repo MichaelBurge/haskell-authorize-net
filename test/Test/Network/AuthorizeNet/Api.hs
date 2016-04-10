@@ -20,6 +20,26 @@ testMerchantAuthentication = MerchantAuthentication {
   merchantAuthentication_transactionKey = "API_TRANSACTION_KEY"
   }
 
+testCustomerProfile :: CustomerProfile
+testCustomerProfile = CustomerProfile {
+  customer_profileId          = Nothing,
+  customer_merchantCustomerId = "Merchant_Customer_ID",
+  customer_description        = "Profile description here",
+  customer_email              = "customer-profile-email@here.com",
+  customer_paymentProfiles    = Just $ CustomerPaymentProfile {
+      customerPaymentProfile_customerType = Just CustomerType_individual,
+      customerPaymentProfile_billTo = Nothing,
+      customerPaymentProfile_driversLicense = Nothing,
+      customerPaymentProfile_taxId = Nothing,
+      customerPaymentProfile_payment = Just $ Payment_creditCard CreditCard {
+          creditCard_cardNumber = "4111111111111111",
+          creditCard_expirationDate = "2020-12",
+          creditCard_cardCode = Nothing
+          }
+      },
+  customer_shipTos            = Nothing
+  }
+
 assertEncodes :: (FromJSON a, ToJSON a) => String -> a -> Assertion
 assertEncodes expectedS actual = do
   let expectedBsRaw = TL.encodeUtf8 $ TL.pack $ expectedS
@@ -47,8 +67,38 @@ apiExpected_authenticateTestRequest = [r|
 apiActual_authenticateTestRequest :: AuthenticateTestRequest
 apiActual_authenticateTestRequest = AuthenticateTestRequest testMerchantAuthentication
 
+apiExpected_createCustomerProfileRequest :: String
+apiExpected_createCustomerProfileRequest = [r|
+{
+    "createCustomerProfileRequest": {
+        "merchantAuthentication": {
+            "name": "API_LOGIN_ID",
+            "transactionKey": "API_TRANSACTION_KEY"
+        },
+        "profile": {
+            "merchantCustomerId": "Merchant_Customer_ID",
+            "description": "Profile description here",
+            "email": "customer-profile-email@here.com",
+            "paymentProfiles": {
+                "customerType": "individual",
+                "payment": {
+                    "creditCard": {
+                        "cardNumber": "4111111111111111",
+                        "expirationDate": "2020-12"
+                    }
+                }
+            }
+        },
+        "validationMode": "testMode"
+    }
+}
+|]
+
+apiActual_createCustomerProfileRequest :: CreateCustomerProfile
+apiActual_createCustomerProfileRequest = CreateCustomerProfile testMerchantAuthentication testCustomerProfile
+
 authorizeNetTests :: TestTree
 authorizeNetTests = testGroup "API Requests Encode to JSON" [
-  testCase "authenticateTestRequest" $ assertEncodes apiExpected_authenticateTestRequest apiActual_authenticateTestRequest
-
+  testCase "authenticateTestRequest" $ assertEncodes apiExpected_authenticateTestRequest apiActual_authenticateTestRequest,
+  testCase "createCustomerProfileRequest" $ assertEncodes apiExpected_createCustomerProfileRequest apiActual_createCustomerProfileRequest
   ]
