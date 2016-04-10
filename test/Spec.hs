@@ -1,2 +1,6 @@
+import Test.Network.AuthorizeNet.Api (authorizeNetTests)
+
+import Test.Tasty
+
 main :: IO ()
-main = putStrLn "Test suite not yet implemented"
+main = defaultMain authorizeNetTests

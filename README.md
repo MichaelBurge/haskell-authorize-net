@@ -1,0 +1,1 @@
+The module Network.AuthorizeNet.Types was automatically generated using XsdToHaskell from HaXml using Authorize.NET's .xsd schema(which is included in the root of this repository).
