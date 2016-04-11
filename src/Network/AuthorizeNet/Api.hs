@@ -235,7 +235,7 @@ $(deriveJSON dropRecordName ''CustomerPaymentProfile)
 -- | anet:customerProfileType
 -- | Contains a 'Maybe' 'PaymentProfile' and 'Maybe' 'CustomerAddress' instead of an unbounded list of these due to JSON not supporting duplicate keys.
 data CustomerProfile = CustomerProfile {
-  customer_profileId          :: Maybe CustomerId,
+  customer_customerProfileId  :: Maybe CustomerId,
   customer_merchantCustomerId :: T.Text,
   customer_description        :: T.Text,
   customer_email              :: T.Text,
@@ -292,6 +292,7 @@ extract member value = withObject (T.unpack member) (.: member) value
 mExtract :: FromJSON a => T.Text -> Value -> Parser (Maybe a)
 mExtract member value = withObject (T.unpack member) (.:? member) value
 
+-- | The API requests are documented at http://developer.authorize.net/api/reference/index.html
 data ApiRequest = AuthenticateTest {
   authenticateTest_merchantAuthentication :: MerchantAuthentication
   } | CreateCustomerProfile {
@@ -300,6 +301,14 @@ data ApiRequest = AuthenticateTest {
   } | GetCustomerProfile {
   getCustomerProfile_merchantAuthentication :: MerchantAuthentication,
   getCustomerProfile_customerProfileId      :: CustomerId
+  } | GetCustomerProfileIds {
+  getCustomerProfileIds_merchantAuthentication :: MerchantAuthentication
+  } | UpdateCustomerProfile {
+  updateCustomerProfile_merchantAuthentication :: MerchantAuthentication,
+  updateCustomerProfile_profile                :: CustomerProfile
+  } | DeleteCustomerProfile {
+  deleteCustomerProfile_merchantAuthentication :: MerchantAuthentication,
+  deleteCustomerProfile_customerProfileId      :: CustomerId
   }
   deriving (Eq, Show)
 

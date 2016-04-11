@@ -23,7 +23,7 @@ testMerchantAuthentication = MerchantAuthentication {
 
 testCustomerProfile :: CustomerProfile
 testCustomerProfile = CustomerProfile {
-  customer_profileId          = Nothing,
+  customer_customerProfileId  = Nothing,
   customer_merchantCustomerId = "Merchant_Customer_ID",
   customer_description        = "Profile description here",
   customer_email              = "customer-profile-email@here.com",
@@ -53,8 +53,8 @@ assertEncodes expectedS actual = do
 
 -- | These unit tests were created from the examples at http://developer.authorize.net/api/reference/index.html
 
-apiExpected_authenticateTestRequest :: String
-apiExpected_authenticateTestRequest = [r|
+apiExpected_authenticateTest :: String
+apiExpected_authenticateTest = [r|
 {
     "authenticateTestRequest": {
         "merchantAuthentication": {
@@ -65,11 +65,11 @@ apiExpected_authenticateTestRequest = [r|
 }
 |]
 
-apiActual_authenticateTestRequest :: ApiRequest
-apiActual_authenticateTestRequest = AuthenticateTest testMerchantAuthentication
+apiActual_authenticateTest :: ApiRequest
+apiActual_authenticateTest = AuthenticateTest testMerchantAuthentication
 
-apiExpected_createCustomerProfileRequest :: String
-apiExpected_createCustomerProfileRequest = [r|
+apiExpected_createCustomerProfile :: String
+apiExpected_createCustomerProfile = [r|
 {
     "createCustomerProfileRequest": {
         "merchantAuthentication": {
@@ -95,11 +95,11 @@ apiExpected_createCustomerProfileRequest = [r|
 }
 |]
 
-apiActual_createCustomerProfileRequest :: ApiRequest
-apiActual_createCustomerProfileRequest = CreateCustomerProfile testMerchantAuthentication testCustomerProfile
+apiActual_createCustomerProfile :: ApiRequest
+apiActual_createCustomerProfile = CreateCustomerProfile testMerchantAuthentication testCustomerProfile
 
-apiExpected_getCustomerProfileRequest :: String
-apiExpected_getCustomerProfileRequest = [r|
+apiExpected_getCustomerProfile :: String
+apiExpected_getCustomerProfile = [r|
 {
     "getCustomerProfileRequest": {
         "merchantAuthentication": {
@@ -111,12 +111,75 @@ apiExpected_getCustomerProfileRequest = [r|
 }
 |]
 
-apiActual_getCustomerProfileRequest :: ApiRequest
-apiActual_getCustomerProfileRequest = GetCustomerProfile testMerchantAuthentication "10000"
+apiActual_getCustomerProfile :: ApiRequest
+apiActual_getCustomerProfile = GetCustomerProfile testMerchantAuthentication "10000"
+
+apiExpected_getCustomerProfileIds :: String
+apiExpected_getCustomerProfileIds = [r|
+{
+    "getCustomerProfileIdsRequest": {
+        "merchantAuthentication": {
+            "name": "API_LOGIN_ID",
+            "transactionKey": "API_TRANSACTION_KEY"
+        }
+    }
+}
+|]
+
+apiActual_getCustomerProfileIds :: ApiRequest
+apiActual_getCustomerProfileIds = GetCustomerProfileIds testMerchantAuthentication
+
+apiExpected_updateCustomerProfile :: String
+apiExpected_updateCustomerProfile = [r|
+{
+    "updateCustomerProfileRequest": {
+        "merchantAuthentication": {
+            "name": "API_LOGIN_ID",
+            "transactionKey": "API_TRANSACTION_KEY"
+        },
+        "profile": {
+            "merchantCustomerId": "custId123",
+            "description": "some description",
+            "email": "newaddress@example.com",
+            "customerProfileId": "10000"
+        }
+    }
+}
+|]
+
+apiActual_updateCustomerProfile :: ApiRequest
+apiActual_updateCustomerProfile = UpdateCustomerProfile testMerchantAuthentication $ CustomerProfile {
+  customer_customerProfileId = Just "10000",
+  customer_merchantCustomerId = "custId123",
+  customer_description = "some description",
+  customer_email = "newaddress@example.com",
+  customer_paymentProfiles = Nothing,
+  customer_shipTos = Nothing
+  }
+
+apiExpected_deleteCustomerProfile :: String
+apiExpected_deleteCustomerProfile = [r|
+{
+    "deleteCustomerProfileRequest": {
+        "merchantAuthentication": {
+            "name": "API_LOGIN_ID",
+            "transactionKey": "API_TRANSACTION_KEY"
+        },
+        "customerProfileId": "10000"
+    }
+}
+|]
+
+apiActual_deleteCustomerProfile :: ApiRequest
+apiActual_deleteCustomerProfile = DeleteCustomerProfile testMerchantAuthentication "10000"
+
 
 authorizeNetTests :: TestTree
 authorizeNetTests = testGroup "API Requests Encode to JSON" [
-  testCase "authenticateTestRequest" $ assertEncodes apiExpected_authenticateTestRequest apiActual_authenticateTestRequest,
-  testCase "createCustomerProfileRequest" $ assertEncodes apiExpected_createCustomerProfileRequest apiActual_createCustomerProfileRequest,
-  testCase "getCustomerProfileRequest" $ assertEncodes apiExpected_getCustomerProfileRequest apiActual_getCustomerProfileRequest
+  testCase "authenticateTestRequest" $ assertEncodes apiExpected_authenticateTest apiActual_authenticateTest,
+  testCase "createCustomerProfileRequest" $ assertEncodes apiExpected_createCustomerProfile apiActual_createCustomerProfile,
+  testCase "getCustomerProfileRequest" $ assertEncodes apiExpected_getCustomerProfile apiActual_getCustomerProfile,
+  testCase "getCustomerProfileIdsRequest" $ assertEncodes apiExpected_getCustomerProfileIds apiActual_getCustomerProfileIds,
+  testCase "updateCustomerProfileRequest" $ assertEncodes apiExpected_updateCustomerProfile apiActual_updateCustomerProfile,
+  testCase "deleteCustomerProfileRequest" $ assertEncodes apiExpected_deleteCustomerProfile apiActual_deleteCustomerProfile
   ]
