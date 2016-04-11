@@ -7,7 +7,7 @@ module Network.AuthorizeNet.Api where
 import Control.Applicative
 import Control.Lens ((^.))
 import Control.Monad
-import Control.Monad.Error
+import Control.Monad.Except
 import Control.Monad.IO.Class
 import Control.Monad.Trans.Either
 import Data.Aeson
@@ -33,7 +33,7 @@ data ApiConfig = ApiConfig {
   } deriving (Show)
 
 
-type CustomerId = Int
+type CustomerId = T.Text
 type PaymentProfileId = Int
 
 type NumericString = T.Text
@@ -55,7 +55,7 @@ productionApiConfig = ApiConfig {
 data MerchantAuthentication = MerchantAuthentication {
   merchantAuthentication_name           :: T.Text,
   merchantAuthentication_transactionKey :: T.Text
-  }
+  } deriving (Eq)
 
 instance Show MerchantAuthentication where
   show x = "MerchantAuthentication { merchantAuthentication_name = \"REDACTED\", merchantAuthentication_transactionKey = \"REDACTED\" }"
@@ -292,49 +292,25 @@ extract member value = withObject (T.unpack member) (.: member) value
 mExtract :: FromJSON a => T.Text -> Value -> Parser (Maybe a)
 mExtract member value = withObject (T.unpack member) (.:? member) value
 
-data AuthenticateTestRequest = AuthenticateTestRequest MerchantAuthentication deriving (Show)
-
-instance FromJSON AuthenticateTestRequest where
-  parseJSON value =
-    let merchantAuthentication = do
-          inner <- extract "authenticateTestRequest" value
-          extract "merchantAuthentication" inner
-    in AuthenticateTestRequest <$> merchantAuthentication
-
-instance ToJSON AuthenticateTestRequest where
-  toJSON (AuthenticateTestRequest merchantAuthentication) = object [
-    "authenticateTestRequest" .= object [
-        "merchantAuthentication" .= toJSON merchantAuthentication
-        ]
-    ]
-
--- | anet:createCustomerProfileRequest
-data CreateCustomerProfile = CreateCustomerProfile {
+data ApiRequest = AuthenticateTest {
+  authenticateTest_merchantAuthentication :: MerchantAuthentication
+  } | CreateCustomerProfile {
   createCustomerProfile_merchantAuthentication :: MerchantAuthentication,
-  createCustomerProfile_customerProfile        :: CustomerProfile
+  createCustomerProfile_profile                :: CustomerProfile
+  } | GetCustomerProfile {
+  getCustomerProfile_merchantAuthentication :: MerchantAuthentication,
+  getCustomerProfile_customerProfileId      :: CustomerId
   }
+  deriving (Eq, Show)
 
-instance FromJSON CreateCustomerProfile where
-  parseJSON value = do
-    inner <- extract "createCustomerProfileRequest" value
-    merchantAuthentication <- extract "merchantAuthentication" inner
-    customerProfile <- extract "profile" inner
-    return $ CreateCustomerProfile merchantAuthentication customerProfile
-
-instance ToJSON CreateCustomerProfile where
-  toJSON (CreateCustomerProfile merchantAuthentication customerProfile) = object [
-    "createCustomerProfileRequest" .= object [
-        "merchantAuthentication" .= toJSON merchantAuthentication,
-        "profile" .= toJSON customerProfile
-        ]
-    ]
+$(deriveJSON requestOptions ''ApiRequest)
 
 data ApiError = ErrorResponseDecoding T.Text
               deriving (Show)
 
 -- | Associates each API Request type with a response type
 type family ApiResponse a where
-  ApiResponse AuthenticateTestRequest = ()
+  ApiResponse ApiRequest = ()
 
 makeApiRequest :: (ToJSON a, FromJSON (ApiResponse a)) => ApiConfig -> a -> EitherT ApiError IO (ApiResponse a)
 makeApiRequest apiConfig apiRequest = do

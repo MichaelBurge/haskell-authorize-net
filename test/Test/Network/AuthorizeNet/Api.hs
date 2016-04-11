@@ -7,6 +7,7 @@ import qualified Data.Text.Lazy as TL
 import qualified Data.Text.Lazy.Encoding as TL
 
 import Data.Aeson
+import Data.Monoid
 import Text.RawString.QQ
 
 import Network.AuthorizeNet.Api
@@ -47,7 +48,7 @@ assertEncodes expectedS actual = do
       eExpectedBs = encode <$> eExpected :: Either String BSL.ByteString
       actualBs = encode actual
   case eExpectedBs of
-    Left e -> error $ show e
+    Left e -> error $ "Error parsing '" <> expectedS <> "': " <> show e
     Right expectedBs -> assertEqual "" expectedBs actualBs
 
 -- | These unit tests were created from the examples at http://developer.authorize.net/api/reference/index.html
@@ -64,8 +65,8 @@ apiExpected_authenticateTestRequest = [r|
 }
 |]
 
-apiActual_authenticateTestRequest :: AuthenticateTestRequest
-apiActual_authenticateTestRequest = AuthenticateTestRequest testMerchantAuthentication
+apiActual_authenticateTestRequest :: ApiRequest
+apiActual_authenticateTestRequest = AuthenticateTest testMerchantAuthentication
 
 apiExpected_createCustomerProfileRequest :: String
 apiExpected_createCustomerProfileRequest = [r|
@@ -94,11 +95,28 @@ apiExpected_createCustomerProfileRequest = [r|
 }
 |]
 
-apiActual_createCustomerProfileRequest :: CreateCustomerProfile
+apiActual_createCustomerProfileRequest :: ApiRequest
 apiActual_createCustomerProfileRequest = CreateCustomerProfile testMerchantAuthentication testCustomerProfile
+
+apiExpected_getCustomerProfileRequest :: String
+apiExpected_getCustomerProfileRequest = [r|
+{
+    "getCustomerProfileRequest": {
+        "merchantAuthentication": {
+            "name": "API_LOGIN_ID",
+            "transactionKey": "API_TRANSACTION_KEY"
+        },
+        "customerProfileId": "10000"
+    }
+}
+|]
+
+apiActual_getCustomerProfileRequest :: ApiRequest
+apiActual_getCustomerProfileRequest = GetCustomerProfile testMerchantAuthentication "10000"
 
 authorizeNetTests :: TestTree
 authorizeNetTests = testGroup "API Requests Encode to JSON" [
   testCase "authenticateTestRequest" $ assertEncodes apiExpected_authenticateTestRequest apiActual_authenticateTestRequest,
-  testCase "createCustomerProfileRequest" $ assertEncodes apiExpected_createCustomerProfileRequest apiActual_createCustomerProfileRequest
+  testCase "createCustomerProfileRequest" $ assertEncodes apiExpected_createCustomerProfileRequest apiActual_createCustomerProfileRequest,
+  testCase "getCustomerProfileRequest" $ assertEncodes apiExpected_getCustomerProfileRequest apiActual_getCustomerProfileRequest
   ]

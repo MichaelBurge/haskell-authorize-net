@@ -27,3 +27,8 @@ choiceType = myDefaultOptions {
 
 enumType :: Options
 enumType = choiceType
+
+requestOptions :: Options
+requestOptions = choiceType {
+  constructorTagModifier = \(x:xs) -> (toLower x : xs) ++ "Request"
+  }
