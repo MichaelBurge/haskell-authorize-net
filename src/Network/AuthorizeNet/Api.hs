@@ -33,8 +33,8 @@ data ApiConfig = ApiConfig {
   } deriving (Show)
 
 
-type CustomerId = T.Text
-type PaymentProfileId = Int
+type CustomerProfileId = T.Text
+type CustomerPaymentProfileId = Int
 
 type NumericString = T.Text
 
@@ -219,6 +219,8 @@ data Payment = Payment_creditCard CreditCard
              | Payment_opaqueData OpaqueData
              | Payment_emv PaymentEmv
              deriving (Eq, Show)
+
+$(deriveJSON choiceType ''Payment)
                       
 -- | anet:customerPaymentProfileType
 data CustomerPaymentProfile = CustomerPaymentProfile {
@@ -235,7 +237,7 @@ $(deriveJSON dropRecordName ''CustomerPaymentProfile)
 -- | anet:customerProfileType
 -- | Contains a 'Maybe' 'PaymentProfile' and 'Maybe' 'CustomerAddress' instead of an unbounded list of these due to JSON not supporting duplicate keys.
 data CustomerProfile = CustomerProfile {
-  customer_customerProfileId  :: Maybe CustomerId,
+  customer_customerProfileId  :: Maybe CustomerProfileId,
   customer_merchantCustomerId :: T.Text,
   customer_description        :: T.Text,
   customer_email              :: T.Text,
@@ -262,30 +264,6 @@ data NewCustomerResponse = NewCustomerSuccess {  newCustomerId :: Int  }
                          | NewCustomerError { newCustomerErrorMessage :: T.Text }
                          deriving (Eq, Show)
 
-$(deriveJSON enumType ''Payment)
-                      
-instance FromJSON NewCustomerResponse where
-  parseJSON (Object v) = do
-    mAuthorization <- v .: "authorization"
-    case mAuthorization of
-      Nothing -> NewCustomerError <$> v .: "message"
-      Just authorization -> return $ NewCustomerSuccess authorization
-
-data AllCustomersResponse = AllCustomersResponse {
-  allCustomersResponse_customerIds :: [CustomerId]
-  } deriving (Show)
-
-data UpdateCustomerRequest = UpdateCustomerRequest {
-  updateCustomerRequest_customerProfileId :: CustomerId,
-  updateCustomerRequest_emailAddress      :: T.Text,
-  updateCustomerRequest_username          :: T.Text,
-  updateCustomerRequest_userId            :: T.Text
-  } deriving (Show)
-
-data UpdateCustomerResponse = UpdateCustomerResponse deriving (Show)
-
-data DeleteCustomerResponse = DeleteCustomerResponse deriving (Show)
-
 extract :: FromJSON a => T.Text -> Value -> Parser a
 extract member value = withObject (T.unpack member) (.: member) value
 
@@ -300,7 +278,7 @@ data ApiRequest = AuthenticateTest {
   createCustomerProfile_profile                :: CustomerProfile
   } | GetCustomerProfile {
   getCustomerProfile_merchantAuthentication :: MerchantAuthentication,
-  getCustomerProfile_customerProfileId      :: CustomerId
+  getCustomerProfile_customerProfileId      :: CustomerProfileId
   } | GetCustomerProfileIds {
   getCustomerProfileIds_merchantAuthentication :: MerchantAuthentication
   } | UpdateCustomerProfile {
@@ -308,7 +286,11 @@ data ApiRequest = AuthenticateTest {
   updateCustomerProfile_profile                :: CustomerProfile
   } | DeleteCustomerProfile {
   deleteCustomerProfile_merchantAuthentication :: MerchantAuthentication,
-  deleteCustomerProfile_customerProfileId      :: CustomerId
+  deleteCustomerProfile_customerProfileId      :: CustomerProfileId
+  } | CreateCustomerPaymentProfile {
+  createCustomerPaymentProfile_merchantAuthentication :: MerchantAuthentication,
+  createCustomerPaymentProfile_customerProfileId      :: CustomerProfileId,
+  createCustomerPaymentProfile_paymentProfile         :: CustomerPaymentProfile
   }
   deriving (Eq, Show)
 

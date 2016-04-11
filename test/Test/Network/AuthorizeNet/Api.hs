@@ -173,6 +173,64 @@ apiExpected_deleteCustomerProfile = [r|
 apiActual_deleteCustomerProfile :: ApiRequest
 apiActual_deleteCustomerProfile = DeleteCustomerProfile testMerchantAuthentication "10000"
 
+apiExpected_createCustomerPaymentProfile :: String
+apiExpected_createCustomerPaymentProfile = [r|
+{
+    "createCustomerPaymentProfileRequest": {
+        "merchantAuthentication": {
+            "name": "API_LOGIN_ID",
+            "transactionKey": "API_TRANSACTION_KEY"
+        },
+        "customerProfileId": "10000",
+        "paymentProfile": {
+            "billTo": {
+                "firstName": "John",
+                "lastName": "Doe",
+                "company": "",
+                "address": "123 Main St.",
+                "city": "Bellevue",
+                "state": "WA",
+                "zip": "98004",
+                "country": "USA",
+                "phoneNumber": "000-000-0000",
+                "faxNumber": ""
+            },
+            "payment": {
+                "creditCard": {
+                    "cardNumber": "4111111111111111",
+                    "expirationDate": "2023-12"
+                }
+            }
+        },
+        "validationMode": "liveMode"
+    }
+}
+|]
+
+apiActual_createCustomerPaymentProfile :: ApiRequest
+apiActual_createCustomerPaymentProfile = CreateCustomerPaymentProfile testMerchantAuthentication "10000" $ CustomerPaymentProfile {
+  customerPaymentProfile_customerType = Nothing,
+  customerPaymentProfile_billTo = Just CustomerAddress {
+      customerAddress_firstName = Just "John",
+      customerAddress_lastName = Just "Doe",
+      customerAddress_company = Just "",
+      customerAddress_address = Just "123 Main St.",
+      customerAddress_city = Just "Bellevue",
+      customerAddress_state = Just "WA",
+      customerAddress_zip = Just "98004",
+      customerAddress_country = Just "USA",
+      customerAddress_phoneNumber = Just "000-000-0000",
+      customerAddress_faxNumber = Just "",
+      customerAddress_email = Nothing
+      },
+  customerPaymentProfile_payment = Just $ Payment_creditCard $ CreditCard {
+      creditCard_cardNumber = "4111111111111111",
+      creditCard_expirationDate = "2023-12",
+      creditCard_cardCode = Nothing
+      },
+  customerPaymentProfile_driversLicense = Nothing,
+  customerPaymentProfile_taxId = Nothing
+  }
 
 authorizeNetTests :: TestTree
 authorizeNetTests = testGroup "API Requests Encode to JSON" [
@@ -181,5 +239,6 @@ authorizeNetTests = testGroup "API Requests Encode to JSON" [
   testCase "getCustomerProfileRequest" $ assertEncodes apiExpected_getCustomerProfile apiActual_getCustomerProfile,
   testCase "getCustomerProfileIdsRequest" $ assertEncodes apiExpected_getCustomerProfileIds apiActual_getCustomerProfileIds,
   testCase "updateCustomerProfileRequest" $ assertEncodes apiExpected_updateCustomerProfile apiActual_updateCustomerProfile,
-  testCase "deleteCustomerProfileRequest" $ assertEncodes apiExpected_deleteCustomerProfile apiActual_deleteCustomerProfile
+  testCase "deleteCustomerProfileRequest" $ assertEncodes apiExpected_deleteCustomerProfile apiActual_deleteCustomerProfile,
+  testCase "createCustomerPaymentProfile" $ assertEncodes apiExpected_createCustomerPaymentProfile apiActual_createCustomerPaymentProfile
   ]
