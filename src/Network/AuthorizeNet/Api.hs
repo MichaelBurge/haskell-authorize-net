@@ -38,8 +38,9 @@ newtype NumericString = NumericString Int deriving (Eq, Show, Num)
 
 type CustomerProfileId = NumericString
 type CustomerPaymentProfileId = NumericString
+type CustomerShippingAddressId = NumericString
 
-
+type CardCode = NumericString
 
 instance FromJSON NumericString where
   parseJSON = withText "numericString" $ \t ->
@@ -137,7 +138,7 @@ data NameAndAddress = NameAndAddress {
 data CreditCard = CreditCard {
   creditCard_cardNumber     :: T.Text,
   creditCard_expirationDate :: T.Text,
-  creditCard_cardCode       :: Maybe T.Text
+  creditCard_cardCode       :: Maybe NumericString
   } deriving (Eq, Show)
 
 $(deriveJSON dropRecordName ''CreditCard)
@@ -202,7 +203,7 @@ $(deriveJSON dropRecordName ''BankAccount)
 data CreditCardTrack = CreditCardTrack {
   creditCardTrack_track1   :: Maybe T.Text,
   creditCardTrack_track2   :: Maybe T.Text,
-  creditCardTrack_cardCode :: Maybe NumericString
+  creditCardTrack_cardCode :: Maybe CardCode
   } deriving (Eq, Show)
 
 $(deriveJSON dropRecordName ''CreditCardTrack)
@@ -284,22 +285,14 @@ data CustomerProfile = CustomerProfile {
 
 $(deriveJSON dropRecordName ''CustomerProfile)
 
-data NewCustomerRequest = NewCustomerRequest {
-  newCustomerUserId   :: Int,
-  newCustomerEmail    :: T.Text,
-  newCustomerUsername :: T.Text
-  } deriving (Eq, Show)
+data ValidationMode = Validation_none
+                    | Validation_testMode
+                    | Validation_liveMode
+                    -- | Per Authorize.NET: "NOT RECOMMENDED. Use of this option can result in fines from your processor."
+                    | Validation_oldLiveMode
+                    deriving (Eq, Show)
 
-instance ToJSON NewCustomerRequest where
-  toJSON x = object [
-    "user_id" .= newCustomerUserId x,
-    "email_address" .= newCustomerEmail x,
-    "username" .= newCustomerUsername x
-    ]
-
-data NewCustomerResponse = NewCustomerSuccess {  newCustomerId :: Int  }
-                         | NewCustomerError { newCustomerErrorMessage :: T.Text }
-                         deriving (Eq, Show)
+$(deriveJSON enumType ''ValidationMode)
 
 extract :: FromJSON a => T.Text -> Value -> Parser a
 extract member value = withObject (T.unpack member) (.: member) value
@@ -338,6 +331,13 @@ data ApiRequest = AuthenticateTest {
   getCustomerPaymentProfileList_month                  :: T.Text,
   getCustomerPaymentProfileList_sorting                :: CustomerPaymentProfileSorting,
   getCustomerPaymentProfileList_paging                 :: Paging
+  } | ValidateCustomerPaymentProfile {
+  validateCustomerPaymentProfile_merchantAuthentication    :: MerchantAuthentication,
+  validateCustomerPaymentProfile_customerProfileId         :: CustomerProfileId,
+  validateCustomerPaymentProfile_customerPaymentProfileId  :: CustomerPaymentProfileId,
+  validateCustomerPaymentProfile_customerShippingAddressId :: Maybe CustomerShippingAddressId,
+  validateCustomerPaymentProfile_cardCode                  :: Maybe CardCode,
+  validateCustomerPaymentProfile_validationMode            :: ValidationMode
   }
   deriving (Eq, Show)
 
