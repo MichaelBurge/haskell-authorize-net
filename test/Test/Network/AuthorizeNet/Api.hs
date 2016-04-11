@@ -112,7 +112,7 @@ apiExpected_getCustomerProfile = [r|
 |]
 
 apiActual_getCustomerProfile :: ApiRequest
-apiActual_getCustomerProfile = GetCustomerProfile testMerchantAuthentication "10000"
+apiActual_getCustomerProfile = GetCustomerProfile testMerchantAuthentication 10000
 
 apiExpected_getCustomerProfileIds :: String
 apiExpected_getCustomerProfileIds = [r|
@@ -149,7 +149,7 @@ apiExpected_updateCustomerProfile = [r|
 
 apiActual_updateCustomerProfile :: ApiRequest
 apiActual_updateCustomerProfile = UpdateCustomerProfile testMerchantAuthentication $ CustomerProfile {
-  customer_customerProfileId = Just "10000",
+  customer_customerProfileId = Just 10000,
   customer_merchantCustomerId = "custId123",
   customer_description = "some description",
   customer_email = "newaddress@example.com",
@@ -171,7 +171,7 @@ apiExpected_deleteCustomerProfile = [r|
 |]
 
 apiActual_deleteCustomerProfile :: ApiRequest
-apiActual_deleteCustomerProfile = DeleteCustomerProfile testMerchantAuthentication "10000"
+apiActual_deleteCustomerProfile = DeleteCustomerProfile testMerchantAuthentication 10000
 
 apiExpected_createCustomerPaymentProfile :: String
 apiExpected_createCustomerPaymentProfile = [r|
@@ -208,7 +208,7 @@ apiExpected_createCustomerPaymentProfile = [r|
 |]
 
 apiActual_createCustomerPaymentProfile :: ApiRequest
-apiActual_createCustomerPaymentProfile = CreateCustomerPaymentProfile testMerchantAuthentication "10000" $ CustomerPaymentProfile {
+apiActual_createCustomerPaymentProfile = CreateCustomerPaymentProfile testMerchantAuthentication 10000 $ CustomerPaymentProfile {
   customerPaymentProfile_customerType = Nothing,
   customerPaymentProfile_billTo = Just CustomerAddress {
       customerAddress_firstName = Just "John",
@@ -232,6 +232,52 @@ apiActual_createCustomerPaymentProfile = CreateCustomerPaymentProfile testMercha
   customerPaymentProfile_taxId = Nothing
   }
 
+apiExpected_getCustomerPaymentProfile :: String
+apiExpected_getCustomerPaymentProfile = [r|
+{
+    "getCustomerPaymentProfileRequest": {
+        "merchantAuthentication": {
+            "name": "API_LOGIN_ID",
+            "transactionKey": "API_TRANSACTION_KEY"
+        },
+        "customerProfileId": "10000",
+        "customerPaymentProfileId": "20000"
+    }
+}
+|]
+
+apiActual_getCustomerPaymentProfile :: ApiRequest
+apiActual_getCustomerPaymentProfile = GetCustomerPaymentProfile testMerchantAuthentication 10000 20000
+
+apiExpected_getCustomerPaymentProfileList :: String
+apiExpected_getCustomerPaymentProfileList = [r|
+{ 
+         "getCustomerPaymentProfileListRequest": { 
+                 "merchantAuthentication": { 
+                         "name": "API_LOGIN_ID", 
+                         "transactionKey": "API_TRANSACTION_KEY" 
+                 }, 
+                 "searchType": "cardsExpiringInMonth", 
+                 "month": "2020-12", 
+                 "sorting": { 
+                         "orderBy": "id", 
+                         "orderDescending": "false" 
+                 }, 
+                 "paging": { 
+                         "limit": "1000", 
+                         "offset": "1" 
+                 } 
+         } 
+ }
+|]
+
+apiActual_getCustomerPaymentProfileList :: ApiRequest
+apiActual_getCustomerPaymentProfileList =
+  let searchType = SearchType_cardsExpiringInMonth
+      sorting = CustomerPaymentProfileSorting OrderField_id False
+      paging = Paging 1000 1
+  in GetCustomerPaymentProfileList testMerchantAuthentication searchType "2020-12" sorting paging
+
 authorizeNetTests :: TestTree
 authorizeNetTests = testGroup "API Requests Encode to JSON" [
   testCase "authenticateTestRequest" $ assertEncodes apiExpected_authenticateTest apiActual_authenticateTest,
@@ -240,5 +286,6 @@ authorizeNetTests = testGroup "API Requests Encode to JSON" [
   testCase "getCustomerProfileIdsRequest" $ assertEncodes apiExpected_getCustomerProfileIds apiActual_getCustomerProfileIds,
   testCase "updateCustomerProfileRequest" $ assertEncodes apiExpected_updateCustomerProfile apiActual_updateCustomerProfile,
   testCase "deleteCustomerProfileRequest" $ assertEncodes apiExpected_deleteCustomerProfile apiActual_deleteCustomerProfile,
-  testCase "createCustomerPaymentProfile" $ assertEncodes apiExpected_createCustomerPaymentProfile apiActual_createCustomerPaymentProfile
+  testCase "createCustomerPaymentProfile" $ assertEncodes apiExpected_createCustomerPaymentProfile apiActual_createCustomerPaymentProfile,
+  testCase "getCustomerPaymentProfile" $ assertEncodes apiExpected_getCustomerPaymentProfile apiActual_getCustomerPaymentProfile
   ]

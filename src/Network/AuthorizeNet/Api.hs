@@ -1,4 +1,4 @@
-{-# LANGUAGE EmptyDataDecls, GADTs, StandaloneDeriving, OverloadedStrings, MultiParamTypeClasses, ScopedTypeVariables, TypeFamilies, FlexibleContexts, TemplateHaskell #-}
+{-# LANGUAGE EmptyDataDecls, GADTs, StandaloneDeriving, OverloadedStrings, MultiParamTypeClasses, ScopedTypeVariables, TypeFamilies, FlexibleContexts, TemplateHaskell, GeneralizedNewtypeDeriving #-}
 
 -- | Implements the Authorize.NET JSON API. Types generally correspond to those defined in the XSD.
 -- | XSD location: https://api.authorize.net/xml/v1/schema/AnetApiSchema.xsd
@@ -22,6 +22,7 @@ import Network.Wreq hiding (Proxy)
 
 import qualified Data.Text    as T
 import qualified Data.Text.IO as T
+import qualified Data.Text.Read as T
 
 import Network.AuthorizeNet.TH
 
@@ -33,10 +34,22 @@ data ApiConfig = ApiConfig {
   } deriving (Show)
 
 
-type CustomerProfileId = T.Text
-type CustomerPaymentProfileId = Int
+newtype NumericString = NumericString Int deriving (Eq, Show, Num)
 
-type NumericString = T.Text
+type CustomerProfileId = NumericString
+type CustomerPaymentProfileId = NumericString
+
+
+
+instance FromJSON NumericString where
+  parseJSON = withText "numericString" $ \t ->
+    case T.decimal t of
+      Left e -> fail e
+      Right (x, "") -> return $ NumericString x
+      Right (x, remainder) -> fail $ T.unpack $ "Additional text found: " <> remainder
+
+instance ToJSON NumericString where
+  toJSON (NumericString x) = String $ T.pack $ show x
 
 -- | The sandbox endpoint for Authorize.NET
 sandboxApiConfig :: ApiConfig
@@ -233,7 +246,31 @@ data CustomerPaymentProfile = CustomerPaymentProfile {
 
 $(deriveJSON dropRecordName ''CustomerPaymentProfile)
 
+-- | anet:CustomerPaymentProfileSearchTypeEnum
+data CustomerPaymentProfileSearchType = SearchType_cardsExpiringInMonth deriving (Eq, Show)
 
+$(deriveJSON enumType ''CustomerPaymentProfileSearchType)
+
+data CustomerPaymentProfileOrderFieldEnum = OrderField_id deriving (Eq, Show)
+
+$(deriveJSON enumType ''CustomerPaymentProfileOrderFieldEnum)
+
+-- | anet:CustomerPaymentProfileSorting
+data CustomerPaymentProfileSorting = CustomerPaymentProfileSorting {
+  customerPaymentProfileSorting_orderBy         :: CustomerPaymentProfileOrderFieldEnum,
+  customerPaymentProfileSorting_orderDescending :: Bool
+  } deriving (Eq, Show)
+
+$(deriveJSON dropRecordName ''CustomerPaymentProfileSorting)
+
+-- | anet:Paging
+data Paging = Paging {
+  paging_limit :: NumericString,
+  paging_offset :: NumericString
+  } deriving (Eq, Show)
+
+$(deriveJSON dropRecordName ''Paging)
+              
 -- | anet:customerProfileType
 -- | Contains a 'Maybe' 'PaymentProfile' and 'Maybe' 'CustomerAddress' instead of an unbounded list of these due to JSON not supporting duplicate keys.
 data CustomerProfile = CustomerProfile {
@@ -291,6 +328,16 @@ data ApiRequest = AuthenticateTest {
   createCustomerPaymentProfile_merchantAuthentication :: MerchantAuthentication,
   createCustomerPaymentProfile_customerProfileId      :: CustomerProfileId,
   createCustomerPaymentProfile_paymentProfile         :: CustomerPaymentProfile
+  } | GetCustomerPaymentProfile {
+  getCustomerPaymentProfile_merchantAuthentication   :: MerchantAuthentication,
+  getCustomerPaymentProfile_customerProfileId        :: CustomerProfileId,
+  getCustomerPaymentProfile_customerPaymentProfileId :: CustomerPaymentProfileId
+  } | GetCustomerPaymentProfileList {
+  getCustomerPaymentProfileList_merchantAuthentication :: MerchantAuthentication,
+  getCustomerPaymentProfileList_searchtype             :: CustomerPaymentProfileSearchType,
+  getCustomerPaymentProfileList_month                  :: T.Text,
+  getCustomerPaymentProfileList_sorting                :: CustomerPaymentProfileSorting,
+  getCustomerPaymentProfileList_paging                 :: Paging
   }
   deriving (Eq, Show)
 
