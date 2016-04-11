@@ -523,79 +523,36 @@ extract member value = withObject (T.unpack member) (.: member) value
 mExtract :: FromJSON a => T.Text -> Value -> Parser (Maybe a)
 mExtract member value = withObject (T.unpack member) (.:? member) value
 
--- | The API requests are documented at http://developer.authorize.net/api/reference/index.html
-data ApiRequest = AuthenticateTest {
-  authenticateTest_merchantAuthentication :: MerchantAuthentication
-  } | CreateCustomerProfile {
-  createCustomerProfile_merchantAuthentication :: MerchantAuthentication,
-  createCustomerProfile_profile                :: CustomerProfile
-  } | GetCustomerProfile {
-  getCustomerProfile_merchantAuthentication :: MerchantAuthentication,
-  getCustomerProfile_customerProfileId      :: CustomerProfileId
-  } | GetCustomerProfileIds {
-  getCustomerProfileIds_merchantAuthentication :: MerchantAuthentication
-  } | UpdateCustomerProfile {
-  updateCustomerProfile_merchantAuthentication :: MerchantAuthentication,
-  updateCustomerProfile_profile                :: CustomerProfile
-  } | DeleteCustomerProfile {
-  deleteCustomerProfile_merchantAuthentication :: MerchantAuthentication,
-  deleteCustomerProfile_customerProfileId      :: CustomerProfileId
-  } | CreateCustomerPaymentProfile {
-  createCustomerPaymentProfile_merchantAuthentication :: MerchantAuthentication,
-  createCustomerPaymentProfile_customerProfileId      :: CustomerProfileId,
-  createCustomerPaymentProfile_paymentProfile         :: CustomerPaymentProfile
-  } | GetCustomerPaymentProfile {
-  getCustomerPaymentProfile_merchantAuthentication   :: MerchantAuthentication,
-  getCustomerPaymentProfile_customerProfileId        :: CustomerProfileId,
-  getCustomerPaymentProfile_customerPaymentProfileId :: CustomerPaymentProfileId
-  } | GetCustomerPaymentProfileList {
-  getCustomerPaymentProfileList_merchantAuthentication :: MerchantAuthentication,
-  getCustomerPaymentProfileList_searchtype             :: CustomerPaymentProfileSearchType,
-  getCustomerPaymentProfileList_month                  :: T.Text,
-  getCustomerPaymentProfileList_sorting                :: CustomerPaymentProfileSorting,
-  getCustomerPaymentProfileList_paging                 :: Paging
-  } | ValidateCustomerPaymentProfile {
-  validateCustomerPaymentProfile_merchantAuthentication    :: MerchantAuthentication,
-  validateCustomerPaymentProfile_customerProfileId         :: CustomerProfileId,
-  validateCustomerPaymentProfile_customerPaymentProfileId  :: CustomerPaymentProfileId,
-  validateCustomerPaymentProfile_customerShippingAddressId :: Maybe CustomerShippingAddressId,
-  validateCustomerPaymentProfile_cardCode                  :: Maybe CardCode,
-  validateCustomerPaymentProfile_validationMode            :: ValidationMode
-  } | UpdateCustomerPaymentProfile {
-  validateCustomerPaymentProfile_merchantAuthentication :: MerchantAuthentication,
-  validateCustomerPaymentProfile_customerProfileId      :: CustomerProfileId,
-  validateCustomerPaymentProfile_paymentProfile         :: CustomerPaymentProfileEx,
-  validateCustomerPaymentProfile_validationMode         :: ValidationMode
-  } | DeleteCustomerPaymentProfile {
-  deleteCustomerPaymentProfile_merchantAuthentication   :: MerchantAuthentication,
-  deleteCustomerPaymentProfile_customerProfileId        :: CustomerProfileId,
-  deleteCustomerPaymentProfile_customerPaymentProfileId :: CustomerPaymentProfileId
-  } | CreateCustomerProfileFromTransaction {
-  createCustomerProfileFromTransaction_merchantAuthentication :: MerchantAuthentication,
-  createCustomerProfileFromTransaction_transId                :: TransactionId,
-  createCustomerProfileFromTransaction_customer               :: Maybe CustomerProfileBase,
-  createCustomerProfileFromTransaction_customerProfileId      :: Maybe CustomerProfileId
-  } | CreateTransaction {
-  createTransaction_merchantAuthentication :: MerchantAuthentication,
-  createTransaction_refId                  :: Maybe T.Text,
-  createTransaction_transactionRequest     :: TransactionRequest
-  }
-  deriving (Eq, Show)
+-- anet:messageTypeEnum
+data MessageType = Message_Ok
+                 | Message_Error
+                 deriving (Eq, Show)
+$(deriveJSON enumType ''MessageType)                          
 
-$(deriveJSON requestOptions ''ApiRequest)
+-- | The possible message codes are documented at http://developer.authorize.net/api/reference/dist/json/responseCodes.json
+data Message = Message {
+  message_code :: T.Text,
+  message_text :: T.Text
+  } deriving (Eq, Show)
 
-data ApiError = ErrorResponseDecoding T.Text
-              deriving (Show)
+$(deriveJSON dropRecordName ''Message)
 
--- | Associates each API Request type with a response type
-type family ApiResponse a where
-  ApiResponse ApiRequest = ()
+-- anet:messagesType
+data Messages = Messages {
+  messages_resultCode :: MessageType,
+  messages_message    :: [Message]
+  } deriving (Eq, Show)
 
-makeApiRequest :: (ToJSON a, FromJSON (ApiResponse a)) => ApiConfig -> a -> EitherT ApiError IO (ApiResponse a)
-makeApiRequest apiConfig apiRequest = do
-  let baseUrl = T.unpack $ apiConfig_baseUrl apiConfig
-      requestBs = encode apiRequest
-  response <- liftIO $ post baseUrl requestBs
-  case eitherDecode $ response ^. responseBody of
-    Left e -> throwError $ ErrorResponseDecoding $ T.pack e
-    Right x -> return x
+$(deriveJSON dropRecordName ''Messages)
+  
+-- data ApiError = ErrorResponseDecoding T.Text
+--               deriving (Show)
+
+-- makeApiRequest :: (ToJSON a, FromJSON (ApiResponse a)) => ApiConfig -> a -> EitherT ApiError IO (ApiResponse a)
+-- makeApiRequest apiConfig apiRequest = do
+--   let baseUrl = T.unpack $ apiConfig_baseUrl apiConfig
+--       requestBs = encode apiRequest
+--   response <- liftIO $ post baseUrl requestBs
+--   case eitherDecode $ response ^. responseBody of
+--     Left e -> throwError $ ErrorResponseDecoding $ T.pack e
+--     Right x -> return x
