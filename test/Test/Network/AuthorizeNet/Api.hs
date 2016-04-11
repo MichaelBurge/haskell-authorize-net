@@ -391,6 +391,54 @@ apiExpected_createCustomerProfileFromTransaction = [r|
 apiActual_createCustomerProfileFromTransaction :: ApiRequest
 apiActual_createCustomerProfileFromTransaction = CreateCustomerProfileFromTransaction testMerchantAuthentication 122 Nothing Nothing
 
+apiExpected_chargeCustomerProfile :: String
+apiExpected_chargeCustomerProfile = [r|
+{
+    "createTransactionRequest": {
+        "merchantAuthentication": {
+            "name": "API_LOGIN_ID",
+            "transactionKey": "API_TRANSACTION_KEY"
+        },
+        "refId": "123456",
+        "transactionRequest": {
+            "transactionType": "authCaptureTransaction",
+            "amount": "45",
+              "profile": {
+                        "customerProfileId": "27388924",
+                        "paymentProfile": { "paymentProfileId": "25000332" }
+                        },
+            "lineItems": {
+                "lineItem": {
+                    "itemId": "1",
+                    "name": "vase",
+                    "description": "Cannes logo",
+                    "quantity": "18",
+                    "unitPrice": "45.00"
+                }
+            }
+        }
+    }
+}
+|]
+
+apiActual_chargeCustomerProfile :: ApiRequest
+apiActual_chargeCustomerProfile =
+  let transactionRequest = (mkTransactionRequest Transaction_authCaptureTransaction "45") {
+        transactionRequest_profile = Just $ mkCustomerProfilePayment {
+            customerProfilePayment_customerProfileId = Just 27388924,
+            customerProfilePayment_paymentProfile = Just $ PaymentProfile 25000332 Nothing
+            },
+        transactionRequest_lineItems = Just $ LineItems $ LineItem {
+            lineItem_itemId = "1",
+            lineItem_name = "vase",
+            lineItem_description = Just "Cannes logo",
+            lineItem_quantity = "18",
+            lineItem_unitPrice = "45.00",
+            lineItem_taxable = Nothing
+            }
+        }
+  in CreateTransaction testMerchantAuthentication (Just "123456") transactionRequest
+     
 authorizeNetTests :: TestTree
 authorizeNetTests = testGroup "API Requests Encode to JSON" [
   testCase "authenticateTestRequest" $ assertEncodes apiExpected_authenticateTest apiActual_authenticateTest,
@@ -404,5 +452,6 @@ authorizeNetTests = testGroup "API Requests Encode to JSON" [
   testCase "validateCustomerPaymentProfile" $ assertEncodes apiExpected_validateCustomerPaymentProfile apiActual_validateCustomerPaymentProfile,
   testCase "updateCustomerPaymentProfile" $ assertEncodes apiExpected_updateCustomerPaymentProfile apiActual_updateCustomerPaymentProfile,
   testCase "deleteCustomerPaymentProfile" $ assertEncodes apiExpected_deleteCustomerPaymentProfile apiActual_deleteCustomerPaymentProfile,
-  testCase "createCustomerProfileFromTransaction" $ assertEncodes apiExpected_createCustomerProfileFromTransaction apiActual_createCustomerProfileFromTransaction
+  testCase "createCustomerProfileFromTransaction" $ assertEncodes apiExpected_createCustomerProfileFromTransaction apiActual_createCustomerProfileFromTransaction,
+  testCase "chargeCustomerProfile" $ assertEncodes apiExpected_chargeCustomerProfile apiActual_chargeCustomerProfile
   ]

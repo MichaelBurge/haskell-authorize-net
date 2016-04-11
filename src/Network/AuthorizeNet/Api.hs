@@ -17,6 +17,7 @@ import Data.Int
 import Data.Maybe
 import Data.Monoid
 import Data.Proxy
+import Data.String
 import GHC.Generics
 import Network.Wreq hiding (Proxy)
 
@@ -35,11 +36,14 @@ data ApiConfig = ApiConfig {
 
 
 newtype NumericString = NumericString Int deriving (Eq, Show, Num)
+newtype Decimal = Decimal T.Text deriving (Eq, Show, IsString, ToJSON, FromJSON)
 
 type CustomerProfileId = NumericString
 type CustomerPaymentProfileId = NumericString
 type CustomerShippingAddressId = NumericString
+type ShippingProfileId = NumericString
 type TransactionId = NumericString
+type TaxId = T.Text
 
 type CardCode = NumericString
 
@@ -187,6 +191,20 @@ data EcheckType = Echeck_PPD
 
 $(deriveJSON enumType ''EcheckType)
 
+-- | anet:transactionTypeEnum
+data TransactionType = Transaction_authOnlyTransaction
+                     | Transaction_authCaptureTransaction
+                     | Transaction_captureOnlyTransaction
+                     | Transaction_refundTransaction
+                     | Transaction_priorAuthCaptureTransaction
+                     | Transaction_voidTransaction
+                     | Transaction_getDetailsTransaction
+                     | Transaction_authOnlyContinueTransaction
+                     | Transaction_authCaptureContinueTransaction
+                     deriving (Eq, Show)
+
+$(deriveJSON enumType ''TransactionType)                              
+
 -- | anet:bankAccountType
 data BankAccount = BankAccount {
   bankAccount_accountType   :: Maybe BankAccountType,
@@ -236,6 +254,14 @@ data Payment = Payment_creditCard CreditCard
              deriving (Eq, Show)
 
 $(deriveJSON choiceType ''Payment)
+
+-- | anet:paymentProfile
+data PaymentProfile = PaymentProfile {
+  paymentProfile_paymentProfileId :: NumericString,
+  paymentProfile_cardCode         :: Maybe CardCode
+  } deriving (Eq, Show)
+
+$(deriveJSON dropRecordName ''PaymentProfile)
                       
 -- | anet:customerPaymentProfileType
 data CustomerPaymentProfile = CustomerPaymentProfile {
@@ -243,10 +269,13 @@ data CustomerPaymentProfile = CustomerPaymentProfile {
   customerPaymentProfile_billTo         :: Maybe CustomerAddress,
   customerPaymentProfile_payment        :: Maybe Payment,
   customerPaymentProfile_driversLicense :: Maybe DriversLicense,
-  customerPaymentProfile_taxId          :: Maybe T.Text
+  customerPaymentProfile_taxId          :: Maybe TaxId
   } deriving (Eq, Show)
 
 $(deriveJSON dropRecordName ''CustomerPaymentProfile)
+
+mkCustomerPaymentProfile :: CustomerPaymentProfile
+mkCustomerPaymentProfile = CustomerPaymentProfile Nothing Nothing Nothing Nothing Nothing
 
 -- | anet:customerPaymentProfileTypeEx
 data CustomerPaymentProfileEx = CustomerPaymentProfileEx {
@@ -254,7 +283,7 @@ data CustomerPaymentProfileEx = CustomerPaymentProfileEx {
   customerPaymentProfileEx_billTo                   :: Maybe CustomerAddress,
   customerPaymentProfileEx_payment                  :: Maybe Payment,
   customerPaymentProfileEx_driversLicense           :: Maybe DriversLicense,
-  customerPaymentProfileEx_taxId                    :: Maybe T.Text,
+  customerPaymentProfileEx_taxId                    :: Maybe TaxId,
   customerPaymentProfileEx_customerPaymentProfileId :: Maybe CustomerPaymentProfileId
   } deriving (Eq, Show)
 
@@ -316,6 +345,178 @@ data ValidationMode = Validation_none
 
 $(deriveJSON enumType ''ValidationMode)
 
+-- | anet:customerProfilePaymentType
+data CustomerProfilePayment = CustomerProfilePayment {
+  customerProfilePayment_createProfile     :: Maybe Bool,
+  customerProfilePayment_customerProfileId :: Maybe CustomerProfileId,
+  customerProfilePayment_paymentProfile    :: Maybe PaymentProfile,
+  customerProfilePayment_shippingProfileId :: Maybe ShippingProfileId
+  } deriving (Eq, Show)
+
+$(deriveJSON dropRecordName ''CustomerProfilePayment)
+
+mkCustomerProfilePayment :: CustomerProfilePayment
+mkCustomerProfilePayment = CustomerProfilePayment Nothing Nothing Nothing Nothing
+
+-- | anet:solutionType
+data Solution = Solution {
+  solution_id         :: T.Text,
+  solution_name       :: Maybe T.Text,
+  solution_vendorName :: Maybe T.Text
+  } deriving (Eq, Show)
+
+$(deriveJSON dropRecordName ''Solution)
+
+-- | anet:orderType
+data Order = Order {
+  order_invoiceNumber :: Maybe T.Text,
+  order_description   :: Maybe T.Text
+  } deriving (Eq, Show)
+
+$(deriveJSON dropRecordName ''Order)
+
+-- | anet:lineItemType
+data LineItem = LineItem {
+  lineItem_itemId      :: T.Text,
+  lineItem_name        :: T.Text,
+  lineItem_description :: Maybe T.Text,
+  lineItem_quantity    :: Decimal,
+  lineItem_unitPrice   :: Decimal,
+  lineItem_taxable     :: Maybe Bool
+  } deriving (Eq, Show)
+
+$(deriveJSON dropRecordName ''LineItem)
+
+-- | anet:ArrayOfLineItem
+data LineItems = LineItems {
+  lineItems_lineItem :: LineItem
+  } deriving (Eq, Show)
+
+$(deriveJSON dropRecordName ''LineItems)                 
+
+-- | anet:extendedAmountType
+data ExtendedAmount = ExtendedAmount {
+  extendedAmount_amount      :: Decimal,
+  extendedAmount_name        :: Maybe T.Text,
+  extendedAmount_description :: Maybe T.Text
+  } deriving (Eq, Show)
+
+$(deriveJSON dropRecordName ''ExtendedAmount)
+
+-- | anet:customerDataType
+data CustomerData = CustomerData {
+  customerData_type            :: Maybe CustomerType,
+  customerData_id              :: Maybe T.Text,
+  customerData_email           :: Maybe T.Text,
+  customerData_driverseLicense :: Maybe DriversLicense,
+  customerData_taxId           :: Maybe TaxId
+  } deriving (Eq, Show)
+
+$(deriveJSON dropRecordName ''CustomerData)
+
+-- | anet:ccAuthenticationType
+data CcAuthentication = CcAuthentication {
+  ccAuthentication_authenticationIndicator       :: T.Text,
+  ccAuthentication_cardholderAuthenticationValue :: T.Text
+  } deriving (Eq, Show)
+
+$(deriveJSON dropRecordName ''CcAuthentication)
+
+-- | anet:transRetailInfoType
+data TransRetailInfo = TransRetailInfo {
+  transRetailInfo_marketType        :: Maybe T.Text,
+  transRetailInfo_deviceType        :: Maybe T.Text,
+  transRetailInfo_customerSignature :: Maybe T.Text
+  } deriving (Eq, Show)
+
+$(deriveJSON dropRecordName ''TransRetailInfo)
+
+data SettingName = SettingName_emailCustomer
+                 | SettingName_merchantEmail
+                 | SettingName_allowPartialAuth
+                 | SettingName_headerEmailReceipt
+                 | SettingName_footerEmailReceipt
+                 | SettingName_recurringBilling
+                 | SettingName_duplicateWindow
+                 | SettingName_testRequest
+                 | SettingName_hostedProfileReturnUrl
+                 | SettingName_hostedProfileReturnUrlText
+                 | SettingName_hostedProfilePageBorderVisible
+                 | SettingName_hostedProfileIFrameCommunicatorUrl
+                 | SettingName_hostedProfileHeadingBgColor
+                 | SettingName_hostedProfileValidationMode
+                 | SettingName_hostedProfileBillingAddressRequired
+                 | SettingName_hostedProfileCardCodeRequired
+                 deriving (Eq, Show)
+
+$(deriveJSON enumType ''SettingName)
+
+
+-- | anet:settingType
+data Setting = Setting {
+  setting_settingName  :: SettingName,
+  setting_settingValue :: T.Text
+  } deriving (Eq, Show)
+
+$(deriveJSON dropRecordName ''Setting)
+
+-- | anet:userField
+data UserField = UserField {
+  userField_name  :: T.Text,
+  userField_value :: T.Text
+  } deriving (Eq, Show)
+
+$(deriveJSON dropRecordName ''UserField)
+
+data SecureAcceptance = SecureAcceptance {
+  secureAcceptance_SecureAcceptanceUrl :: T.Text,
+  secureAcceptance_PayerID             :: T.Text
+  } deriving (Eq, Show)
+
+$(deriveJSON dropRecordName ''SecureAcceptance)
+
+data EmvResponse = EmvResponse {
+  emvResponse_tsvData :: Maybe T.Text,
+  emvResponse_tag     :: Maybe T.Text
+  } deriving (Eq, Show)
+
+-- | anet:transactionRequestType
+data TransactionRequest = TransactionRequest {
+  transactionRequest_transactionType          :: TransactionType,
+  transactionRequest_amount                   :: Decimal,
+  transactionRequest_currencyCode             :: Maybe T.Text,
+  transactionRequest_payment                  :: Maybe Payment,
+  transactionRequest_profile                  :: Maybe CustomerProfilePayment,
+  transactionRequest_solution                 :: Maybe Solution,
+  transactionRequest_callId                   :: Maybe T.Text,
+  transactionRequest_terminalNumber           :: Maybe T.Text,
+  transactionRequest_authCode                 :: Maybe T.Text,
+  transactionRequest_refTransId               :: Maybe T.Text,
+  transactionRequest_splitTenderId            :: Maybe T.Text,
+  transactionRequest_order                    :: Maybe Order,
+  transactionRequest_lineItems                :: Maybe LineItems,
+  transactionRequest_tax                      :: Maybe ExtendedAmount,
+  transactionRequest_duty                     :: Maybe ExtendedAmount,
+  transactionRequest_shipping                 :: Maybe ExtendedAmount,
+  transactionRequest_taxExempt                :: Maybe Bool,
+  transactionRequest_poNumber                 :: Maybe T.Text,
+  transactionRequest_customer                 :: Maybe CustomerData,
+  transactionRequest_billTo                   :: Maybe CustomerAddress,
+  transactionRequest_shipTo                   :: Maybe CustomerAddress,
+  transactionRequest_customerIP               :: Maybe T.Text,
+  transactionRequest_cardholderAuthentication :: Maybe CcAuthentication,
+  transactionRequest_retail                   :: Maybe TransRetailInfo,
+  transactionRequest_employeeId               :: Maybe T.Text,
+  transactionRequest_transactionSettings      :: Maybe [Setting],
+  transactionRequest_userFields               :: Maybe UserField
+  } deriving (Eq, Show)
+
+$(deriveJSON dropRecordName ''TransactionRequest)
+
+-- | The TransactionRequest type has a lot of Maybe fields, so use this to get a bare-bones default.
+mkTransactionRequest :: TransactionType -> Decimal -> TransactionRequest
+mkTransactionRequest transactionType amount = TransactionRequest transactionType amount Nothing Nothing Nothing Nothing Nothing Nothing Nothing Nothing Nothing Nothing Nothing Nothing Nothing Nothing Nothing Nothing Nothing Nothing Nothing Nothing Nothing Nothing Nothing Nothing Nothing
+
 extract :: FromJSON a => T.Text -> Value -> Parser a
 extract member value = withObject (T.unpack member) (.: member) value
 
@@ -374,6 +575,10 @@ data ApiRequest = AuthenticateTest {
   createCustomerProfileFromTransaction_transId                :: TransactionId,
   createCustomerProfileFromTransaction_customer               :: Maybe CustomerProfileBase,
   createCustomerProfileFromTransaction_customerProfileId      :: Maybe CustomerProfileId
+  } | CreateTransaction {
+  createTransaction_merchantAuthentication :: MerchantAuthentication,
+  createTransaction_refId                  :: Maybe T.Text,
+  createTransaction_transactionRequest     :: TransactionRequest
   }
   deriving (Eq, Show)
 
