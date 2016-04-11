@@ -278,6 +278,119 @@ apiActual_getCustomerPaymentProfileList =
       paging = Paging 1000 1
   in GetCustomerPaymentProfileList testMerchantAuthentication searchType "2020-12" sorting paging
 
+apiExpected_validateCustomerPaymentProfile :: String
+apiExpected_validateCustomerPaymentProfile = [r|
+{
+    "validateCustomerPaymentProfileRequest": {
+        "merchantAuthentication": {
+            "name": "API_LOGIN_ID",
+            "transactionKey": "API_TRANSACTION_KEY"
+        },
+        "customerProfileId": "10000",
+        "customerPaymentProfileId": "20000",
+        "validationMode": "liveMode"
+    }
+}
+|]
+
+apiActual_validateCustomerPaymentProfile :: ApiRequest
+apiActual_validateCustomerPaymentProfile = ValidateCustomerPaymentProfile testMerchantAuthentication 10000 20000 Nothing Nothing Validation_liveMode
+
+apiExpected_updateCustomerPaymentProfile :: String
+apiExpected_updateCustomerPaymentProfile = [r|
+{
+    "updateCustomerPaymentProfileRequest": {
+        "merchantAuthentication": {
+            "name": "API_LOGIN_ID",
+            "transactionKey": "API_TRANSACTION_KEY"
+        },
+        "customerProfileId": "10000",
+        "paymentProfile": {
+            "billTo": {
+                "firstName": "John",
+                "lastName": "Doe",
+                "company": "",
+                "address": "123 Main St.",
+                "city": "Bellevue",
+                "state": "WA",
+                "zip": "98004",
+                "country": "USA",
+                "phoneNumber": "000-000-0000",
+                "faxNumber": ""
+            },
+            "payment": {
+                "creditCard": {
+                    "cardNumber": "4111111111111111",
+                    "expirationDate": "2026-01"
+                }
+            },
+            "customerPaymentProfileId": "20000"
+        },
+        "validationMode": "liveMode"
+    }
+}
+|]
+
+apiActual_updateCustomerPaymentProfile =
+  let paymentProfile = CustomerPaymentProfileEx {
+        customerPaymentProfileEx_customerType             = Nothing,
+        customerPaymentProfileEx_billTo                   = Just CustomerAddress {
+            customerAddress_firstName = Just "John",
+            customerAddress_lastName = Just "Doe",
+            customerAddress_company = Just "",
+            customerAddress_address = Just "123 Main St.",
+            customerAddress_city = Just "Bellevue",
+            customerAddress_state = Just "WA",
+            customerAddress_zip = Just "98004",
+            customerAddress_country = Just "USA",
+            customerAddress_phoneNumber = Just "000-000-0000",
+            customerAddress_faxNumber = Just "",
+            customerAddress_email = Nothing
+            },
+        customerPaymentProfileEx_payment                  = Just $ Payment_creditCard $ CreditCard {
+            creditCard_cardNumber = "4111111111111111",
+            creditCard_expirationDate = "2026-01",
+            creditCard_cardCode = Nothing
+            },
+        customerPaymentProfileEx_driversLicense           = Nothing,
+        customerPaymentProfileEx_taxId                    = Nothing,
+        customerPaymentProfileEx_customerPaymentProfileId = Just 20000
+        }
+  in UpdateCustomerPaymentProfile testMerchantAuthentication 10000 paymentProfile Validation_liveMode
+
+apiExpected_deleteCustomerPaymentProfile :: String
+apiExpected_deleteCustomerPaymentProfile = [r|
+{
+    "deleteCustomerPaymentProfileRequest": {
+        "merchantAuthentication": {
+            "name": "API_LOGIN_ID",
+            "transactionKey": "API_TRANSACTION_KEY"
+        },
+        "customerProfileId": "10000",
+        "customerPaymentProfileId": "20000"
+    }
+}
+|]
+
+apiActual_deleteCustomerPaymentProfile :: ApiRequest
+apiActual_deleteCustomerPaymentProfile = DeleteCustomerPaymentProfile testMerchantAuthentication 10000 20000
+
+apiExpected_createCustomerProfileFromTransaction :: String
+apiExpected_createCustomerProfileFromTransaction = [r|
+{
+    "createCustomerProfileFromTransactionRequest": {
+        "merchantAuthentication": {
+            "name": "API_LOGIN_ID",
+            "transactionKey": "API_TRANSACTION_KEY"
+        },
+        "transId": "122"
+    }
+}
+|]
+
+apiActual_createCustomerProfileFromTransaction :: ApiRequest
+apiActual_createCustomerProfileFromTransaction = CreateCustomerProfileFromTransaction testMerchantAuthentication 122 Nothing Nothing
+
 authorizeNetTests :: TestTree
 authorizeNetTests = testGroup "API Requests Encode to JSON" [
   testCase "authenticateTestRequest" $ assertEncodes apiExpected_authenticateTest apiActual_authenticateTest,
@@ -287,5 +400,9 @@ authorizeNetTests = testGroup "API Requests Encode to JSON" [
   testCase "updateCustomerProfileRequest" $ assertEncodes apiExpected_updateCustomerProfile apiActual_updateCustomerProfile,
   testCase "deleteCustomerProfileRequest" $ assertEncodes apiExpected_deleteCustomerProfile apiActual_deleteCustomerProfile,
   testCase "createCustomerPaymentProfile" $ assertEncodes apiExpected_createCustomerPaymentProfile apiActual_createCustomerPaymentProfile,
-  testCase "getCustomerPaymentProfile" $ assertEncodes apiExpected_getCustomerPaymentProfile apiActual_getCustomerPaymentProfile
+  testCase "getCustomerPaymentProfile" $ assertEncodes apiExpected_getCustomerPaymentProfile apiActual_getCustomerPaymentProfile,
+  testCase "validateCustomerPaymentProfile" $ assertEncodes apiExpected_validateCustomerPaymentProfile apiActual_validateCustomerPaymentProfile,
+  testCase "updateCustomerPaymentProfile" $ assertEncodes apiExpected_updateCustomerPaymentProfile apiActual_updateCustomerPaymentProfile,
+  testCase "deleteCustomerPaymentProfile" $ assertEncodes apiExpected_deleteCustomerPaymentProfile apiActual_deleteCustomerPaymentProfile,
+  testCase "createCustomerProfileFromTransaction" $ assertEncodes apiExpected_createCustomerProfileFromTransaction apiActual_createCustomerProfileFromTransaction
   ]

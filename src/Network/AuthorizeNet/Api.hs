@@ -39,6 +39,7 @@ newtype NumericString = NumericString Int deriving (Eq, Show, Num)
 type CustomerProfileId = NumericString
 type CustomerPaymentProfileId = NumericString
 type CustomerShippingAddressId = NumericString
+type TransactionId = NumericString
 
 type CardCode = NumericString
 
@@ -247,6 +248,18 @@ data CustomerPaymentProfile = CustomerPaymentProfile {
 
 $(deriveJSON dropRecordName ''CustomerPaymentProfile)
 
+-- | anet:customerPaymentProfileTypeEx
+data CustomerPaymentProfileEx = CustomerPaymentProfileEx {
+  customerPaymentProfileEx_customerType             :: Maybe CustomerType,
+  customerPaymentProfileEx_billTo                   :: Maybe CustomerAddress,
+  customerPaymentProfileEx_payment                  :: Maybe Payment,
+  customerPaymentProfileEx_driversLicense           :: Maybe DriversLicense,
+  customerPaymentProfileEx_taxId                    :: Maybe T.Text,
+  customerPaymentProfileEx_customerPaymentProfileId :: Maybe CustomerPaymentProfileId
+  } deriving (Eq, Show)
+
+$(deriveJSON dropRecordName ''CustomerPaymentProfileEx)
+
 -- | anet:CustomerPaymentProfileSearchTypeEnum
 data CustomerPaymentProfileSearchType = SearchType_cardsExpiringInMonth deriving (Eq, Show)
 
@@ -271,7 +284,16 @@ data Paging = Paging {
   } deriving (Eq, Show)
 
 $(deriveJSON dropRecordName ''Paging)
-              
+
+-- | anet:customerProfileBaseType
+data CustomerProfileBase = CustomerProfileBase {
+  customerProfileBase_merchantCustomerId :: Maybe T.Text,
+  customerProfileBase_description        :: Maybe T.Text,
+  customerProfileBase_email              :: Maybe T.Text
+  } deriving (Eq, Show)
+
+$(deriveJSON dropRecordName ''CustomerProfileBase)                          
+  
 -- | anet:customerProfileType
 -- | Contains a 'Maybe' 'PaymentProfile' and 'Maybe' 'CustomerAddress' instead of an unbounded list of these due to JSON not supporting duplicate keys.
 data CustomerProfile = CustomerProfile {
@@ -338,6 +360,20 @@ data ApiRequest = AuthenticateTest {
   validateCustomerPaymentProfile_customerShippingAddressId :: Maybe CustomerShippingAddressId,
   validateCustomerPaymentProfile_cardCode                  :: Maybe CardCode,
   validateCustomerPaymentProfile_validationMode            :: ValidationMode
+  } | UpdateCustomerPaymentProfile {
+  validateCustomerPaymentProfile_merchantAuthentication :: MerchantAuthentication,
+  validateCustomerPaymentProfile_customerProfileId      :: CustomerProfileId,
+  validateCustomerPaymentProfile_paymentProfile         :: CustomerPaymentProfileEx,
+  validateCustomerPaymentProfile_validationMode         :: ValidationMode
+  } | DeleteCustomerPaymentProfile {
+  deleteCustomerPaymentProfile_merchantAuthentication   :: MerchantAuthentication,
+  deleteCustomerPaymentProfile_customerProfileId        :: CustomerProfileId,
+  deleteCustomerPaymentProfile_customerPaymentProfileId :: CustomerPaymentProfileId
+  } | CreateCustomerProfileFromTransaction {
+  createCustomerProfileFromTransaction_merchantAuthentication :: MerchantAuthentication,
+  createCustomerProfileFromTransaction_transId                :: TransactionId,
+  createCustomerProfileFromTransaction_customer               :: Maybe CustomerProfileBase,
+  createCustomerProfileFromTransaction_customerProfileId      :: Maybe CustomerProfileId
   }
   deriving (Eq, Show)
 
