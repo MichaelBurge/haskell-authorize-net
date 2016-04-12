@@ -138,10 +138,42 @@ test_getCustomerProfileIdsResponse = assertDecodes (undefined :: GetCustomerProf
 }
 |]
 
+test_updateCustomerProfileResponse :: Assertion
+test_updateCustomerProfileResponse = assertDecodes (undefined :: UpdateCustomerProfileResponse) $ [r|
+{
+    "messages": {
+        "resultCode": "Ok",
+        "message": [
+            {
+                "code": "I00001",
+                "text": "Successful."
+            }
+        ]
+    }
+}
+|]
+
+test_deleteCustomerProfileResponse :: Assertion
+test_deleteCustomerProfileResponse = assertDecodes (undefined :: UpdateCustomerProfileResponse) $ [r|
+{
+    "messages": {
+        "resultCode": "Ok",
+        "message": [
+            {
+                "code": "I00001",
+                "text": "Successful."
+            }
+        ]
+    }
+}
+|]
+
 responseTests :: TestTree
 responseTests = testGroup "API Responses Encode and Decode to JSON correctly" [
       testCase "authenticateTestResponse" $ assertEncodes apiExpected_authenticateTestResponse apiActual_authenticateTestResponse,
       testCase "createCustomerProfileResponse" $ assertEncodes apiExpected_createCustomerProfileResponse apiActual_createCustomerProfileResponse,
       testCase "getCustomerProfileResponse" $ assertDecodes (undefined :: GetCustomerProfileResponse) apiExpected_getCustomerProfileResponse,
-      testCase "getCustomerProfileIdsResponse" test_getCustomerProfileIdsResponse
+      testCase "getCustomerProfileIdsResponse" test_getCustomerProfileIdsResponse,
+      testCase "updateCustomerProfileResponse" test_updateCustomerProfileResponse,
+      testCase "deleteCustomerProfileResponse" test_deleteCustomerProfileResponse
       ]

@@ -55,3 +55,20 @@ data GetCustomerProfileIdsResponse = GetCustomerProfileIdsResponse {
   } deriving (Eq, Show)
 
 $(deriveJSON dropRecordName ''GetCustomerProfileIdsResponse)
+
+data UpdateCustomerProfileResponse = UpdateCustomerProfileResponse {
+  updateCustomerProfileResponse_refId        :: Maybe T.Text,
+  updateCustomerProfileResponse_messages     :: Messages,
+  updateCustomerProfileResponse_sessionToken :: Maybe T.Text
+  } deriving (Eq, Show)
+
+$(deriveJSON dropRecordName ''UpdateCustomerProfileResponse)
+
+data DeleteCustomerProfileResponse = DeleteCustomerProfileResponse {
+  deleteCustomerProfileResponse_refId        :: Maybe T.Text,
+  deleteCustomerProfileResponse_messages     :: Messages,
+  deleteCustomerProfileResponse_sessionToken :: Maybe T.Text
+  } deriving (Eq, Show)
+
+$(deriveJSON dropRecordName ''DeleteCustomerProfileResponse)
+
