@@ -192,6 +192,9 @@ data CreditCardMasked = CreditCardMasked {
 
 $(deriveJSON dropRecordName ''CreditCardMasked)
 
+mkCreditCardMasked :: T.Text -> T.Text -> CreditCardMasked
+mkCreditCardMasked cardNumber expirationDate = CreditCardMasked cardNumber expirationDate Nothing Nothing
+
 data CustomerAddress = CustomerAddress {
   customerAddress_firstName   :: Maybe T.Text,
   customerAddress_lastName    :: Maybe T.Text,
@@ -209,6 +212,8 @@ data CustomerAddress = CustomerAddress {
 
 $(deriveJSON dropRecordName ''CustomerAddress)
 
+mkCustomerAddress :: CustomerAddress
+mkCustomerAddress = CustomerAddress Nothing Nothing Nothing Nothing Nothing Nothing Nothing Nothing Nothing Nothing Nothing
 
 -- | anet:driversLicenseType
 data DriversLicense = DriversLicense {

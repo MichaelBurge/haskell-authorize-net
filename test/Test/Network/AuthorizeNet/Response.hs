@@ -245,7 +245,8 @@ test_getCustomerPaymentProfileResponse =
       }
   in assertEncodes text response
 test_getCustomerPaymentProfileListResponse :: Assertion
-test_getCustomerPaymentProfileListResponse = assertDecodes (undefined :: GetCustomerPaymentProfileListResponse) $ [r|
+test_getCustomerPaymentProfileListResponse =
+  let text = [r|
 { 
          "getCustomerPaymentProfileListResponse": { 
                  "messages": { 
@@ -275,7 +276,18 @@ test_getCustomerPaymentProfileListResponse = assertDecodes (undefined :: GetCust
         } 
  }
 |]
-
+      response = R_getCustomerPaymentProfileListResponse Nothing testMessages Nothing 1 $
+                 Just $ ArrayOfCustomerPaymentProfileListItem $ ArrayOf $ pure $
+                 CustomerPaymentProfileListItem {
+                   customerPaymentProfileListItem_customerPaymentProfileId = 1051079,
+                   customerPaymentProfileListItem_customerProfileId        = 918787,
+                   customerPaymentProfileListItem_billTo                   = mkCustomerAddress {
+                       customerAddress_firstName = Just "John",
+                       customerAddress_lastName = Just "Smith"
+                   },
+                   customerPaymentProfileListItem_payment = PaymentMasked_creditCard $ mkCreditCardMasked "XXXX1111" "XXXX"
+               }
+  in assertEncodes text response
 test_validateCustomerPaymentProfileResponse :: Assertion
 test_validateCustomerPaymentProfileResponse = assertDecodes (undefined :: ValidateCustomerPaymentProfileResponse) $ [r|
 {
