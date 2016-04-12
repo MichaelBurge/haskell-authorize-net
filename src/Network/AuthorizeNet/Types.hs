@@ -2,7 +2,7 @@
 
 -- | Implements the Authorize.NET JSON API. Types generally correspond to those defined in the XSD.
 -- | XSD location: https://api.authorize.net/xml/v1/schema/AnetApiSchema.xsd
-module Network.AuthorizeNet.Api where
+module Network.AuthorizeNet.Types where
 
 import Control.Applicative
 import Control.Lens ((^.))

@@ -13,8 +13,8 @@ import Text.RawString.QQ
 import Test.Tasty
 import Test.Tasty.HUnit
 
-import Network.AuthorizeNet.Api
 import Network.AuthorizeNet.Request
+import Network.AuthorizeNet.Types
 import Test.Network.AuthorizeNet.Util
 
 -- | These unit tests were created from the examples at http://developer.authorize.net/api/reference/index.html

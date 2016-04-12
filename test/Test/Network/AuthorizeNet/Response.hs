@@ -2,8 +2,8 @@
 
 module Test.Network.AuthorizeNet.Response (responseTests) where
 
-import Network.AuthorizeNet.Api
 import Network.AuthorizeNet.Response
+import Network.AuthorizeNet.Types
 
 import qualified Data.ByteString.Lazy as BSL
 import qualified Data.Text.Lazy as TL

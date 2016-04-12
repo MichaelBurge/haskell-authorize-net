@@ -12,7 +12,7 @@ import qualified Data.ByteString.Lazy as BSL
 import qualified Data.Text.Lazy as TL
 import qualified Data.Text.Lazy.Encoding as TL
 
-import Network.AuthorizeNet.Api
+import Network.AuthorizeNet.Types
 
 testMerchantAuthentication :: MerchantAuthentication
 testMerchantAuthentication = MerchantAuthentication {

@@ -6,8 +6,8 @@ import Data.Aeson.TH
 
 import qualified Data.Text as T
 
-import Network.AuthorizeNet.Api
 import Network.AuthorizeNet.TH
+import Network.AuthorizeNet.Types
 
 -- | The API responses are documented at http://developer.authorize.net/api/reference/index.html
 data AuthenticateTestResponse = AuthenticateTestResponse {
