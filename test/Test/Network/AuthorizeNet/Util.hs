@@ -52,7 +52,7 @@ assertEncodes expectedS actual = do
     Left e -> error $ "Error parsing '" <> expectedS <> "': " <> show e
     Right expectedBs -> assertEqual "" expectedBs actualBs
 
-assertDecodes :: (FromJSON a, ToJSON a) => String -> a -> Assertion
-assertDecodes xS dummy =
+assertDecodes :: (FromJSON a, ToJSON a) => a -> String -> Assertion
+assertDecodes dummy xS =
   let x = fromJust $ decode $ TL.encodeUtf8 $ TL.pack xS
   in assertEncodes xS $ x `asTypeOf` dummy

@@ -39,8 +39,19 @@ data GetCustomerProfileResponse = GetCustomerProfileResponse {
   getCustomerProfileResponse_refId           :: Maybe T.Text,
   getCustomerProfileResponse_messages        :: Messages,
   getCustomerProfileResponse_sessionToken    :: Maybe T.Text,
+  
   getCustomerProfileResponse_profile         :: CustomerProfileMasked,
   getCustomerProfileResponse_subscriptionIds :: Maybe [SubscriptionId]
   } deriving (Eq, Show)
 
 $(deriveJSON dropRecordName ''GetCustomerProfileResponse)
+
+data GetCustomerProfileIdsResponse = GetCustomerProfileIdsResponse {
+  getCustomerProfileIdsResponse_refId        :: Maybe T.Text,
+  getCustomerProfileIdsResponse_messages     :: Messages,
+  getCustomerProfileIdsResponse_sessionToken :: Maybe T.Text,
+
+  getCustomerProfileIdsResponse_ids          :: [CustomerProfileId]
+  } deriving (Eq, Show)
+
+$(deriveJSON dropRecordName ''GetCustomerProfileIdsResponse)
