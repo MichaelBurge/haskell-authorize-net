@@ -6,7 +6,7 @@ import Data.Aeson
 import Data.Maybe
 import Data.Monoid
 import Data.Proxy
-import Test.HUnit
+import Test.Tasty.HUnit
 
 import qualified Data.ByteString.Lazy as BSL
 import qualified Data.Text.Lazy as TL

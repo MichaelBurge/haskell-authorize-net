@@ -1,4 +1,4 @@
-{-# LANGUAGE QuasiQuotes, OverloadedStrings #-}
+{-# LANGUAGE QuasiQuotes, OverloadedStrings, OverloadedLists #-}
 
 module Test.Network.AuthorizeNet.Response (responseTests) where
 
@@ -116,7 +116,8 @@ apiExpected_getCustomerProfileResponse = [r|
 |]
  
 test_getCustomerProfileIdsResponse :: Assertion
-test_getCustomerProfileIdsResponse = assertDecodes (undefined :: GetCustomerProfileIdsResponse) $ [r|
+test_getCustomerProfileIdsResponse =
+  let text = [r|
 {
     "ids": [
         "47988",
@@ -137,9 +138,178 @@ test_getCustomerProfileIdsResponse = assertDecodes (undefined :: GetCustomerProf
     }
 }
 |]
+      response = GetCustomerProfileIdsResponse Nothing testMessages Nothing [47988, 47997, 48458, 48468, 189118, 190178 ]
+  in assertEncodes text response
 
 test_updateCustomerProfileResponse :: Assertion
-test_updateCustomerProfileResponse = assertDecodes (undefined :: UpdateCustomerProfileResponse) $ [r|
+test_updateCustomerProfileResponse =
+  let text = [r|
+{
+    "messages": {
+        "resultCode": "Ok",
+        "message": [
+            {
+                "code": "I00001",
+                "text": "Successful."
+            }
+        ]
+    }
+}
+|]
+      response = UpdateCustomerProfileResponse Nothing testMessages Nothing
+  in assertEncodes text response
+test_deleteCustomerProfileResponse :: Assertion
+test_deleteCustomerProfileResponse =
+  let text = [r|
+{
+    "messages": {
+        "resultCode": "Ok",
+        "message": [
+            {
+                "code": "I00001",
+                "text": "Successful."
+            }
+        ]
+    }
+}
+|]
+      response = DeleteCustomerProfileResponse Nothing testMessages Nothing
+  in assertEncodes text response
+
+test_createCustomerPaymentProfileResponse :: Assertion
+test_createCustomerPaymentProfileResponse =
+  let text = [r|
+{
+    "customerPaymentProfileId": "157498",
+    "validationDirectResponse": "1,1,1,This transaction has been approved.,KJE50J,Y,2149186956,none,Test transaction for ValidateCustomerPaymentProfile.,0.00,CC,auth_only,none,John,Doe,,123 Main St.,Bellevue,WA,98004,USA,000-000-0000,,email@example.com,,,,,,,,,0.00,0.00,0.00,FALSE,none,035AD411ACC863BC459E6E24F6C29D95,M,1,,,,,,,,,,,XXXX1111,Visa,,,,,,,,,,,,,,,,",
+    "messages": {
+        "resultCode": "Ok",
+        "message": [
+            {
+                "code": "I00001",
+                "text": "Successful."
+            }
+        ]
+    }
+}
+|]
+      response = CreateCustomerPaymentProfileResponse Nothing testMessages Nothing (Just 157498) $ Just "1,1,1,This transaction has been approved.,KJE50J,Y,2149186956,none,Test transaction for ValidateCustomerPaymentProfile.,0.00,CC,auth_only,none,John,Doe,,123 Main St.,Bellevue,WA,98004,USA,000-000-0000,,email@example.com,,,,,,,,,0.00,0.00,0.00,FALSE,none,035AD411ACC863BC459E6E24F6C29D95,M,1,,,,,,,,,,,XXXX1111,Visa,,,,,,,,,,,,,,,,"
+  in assertEncodes text response
+
+test_getCustomerPaymentProfileResponse :: Assertion
+test_getCustomerPaymentProfileResponse =
+  let text = [r|
+{
+    "paymentProfile": {
+        "customerProfileId": "39598611",
+        "customerPaymentProfileId": "35936989",
+        "payment": {
+            "creditCard": {
+                "cardNumber": "XXXX1111",
+                "expirationDate": "XXXX"
+            }
+        },
+        "subscriptionIds": [
+            "3078153",
+            "3078154"
+        ],
+        "customerType": "individual",
+        "billTo": {
+            "firstName": "John",
+            "lastName": "Smith"
+        }
+    },
+    "messages": {
+        "resultCode": "Ok",
+        "message": [
+            {
+                "code": "I00001",
+               "text": "Successful."
+            }
+        ]
+    }
+}
+|]
+      response = GetCustomerPaymentProfileResponse Nothing testMessages Nothing $ Just CustomerPaymentProfileMasked {
+        customerPaymentProfileMasked_customerProfileId = Just 39598611,
+        customerPaymentProfileMasked_customerPaymentProfileId = 35936989,
+        customerPaymentProfileMasked_payment = Just $ PaymentMasked_creditCard CreditCardMasked {
+          creditCardMasked_cardNumber = "XXXX1111",
+          creditCardMasked_expirationDate = "XXXX",
+          creditCardMasked_cardType = Nothing,
+          creditCardMasked_cardArt = Nothing
+        },
+        customerPaymentProfileMasked_driversLicense = Nothing,
+        customerPaymentProfileMasked_taxId = Nothing,
+        customerPaymentProfileMasked_subscriptionIds = Just [ 3078153, 3078154 ]
+      }
+  in assertEncodes text response
+test_getCustomerPaymentProfileListResponse :: Assertion
+test_getCustomerPaymentProfileListResponse = assertDecodes (undefined :: GetCustomerPaymentProfileListResponse) $ [r|
+{ 
+         "getCustomerPaymentProfileListResponse": { 
+                 "messages": { 
+                         "resultCode": "Ok", 
+                         "message": { 
+                                "code": "I00001", 
+                                "text": "Successful." 
+                         } 
+                }, 
+                 "totalNumInResultSet": "1", 
+                 "paymentProfiles": { 
+                         "paymentProfile": { 
+                                "customerPaymentProfileId": "1051079", 
+                                 "customerProfileId": "918787", 
+                                 "billTo": { 
+                                         "firstName": "John", 
+                                         "lastName": "Smith" 
+                                 }, 
+                                 "payment": { 
+                                         "creditCard": { 
+                                                "cardNumber": "XXXX1111", 
+                                                 "expirationDate": "XXXX" 
+                                         } 
+                                 } 
+                        } 
+                 } 
+        } 
+ }
+|]
+
+test_validateCustomerPaymentProfileResponse :: Assertion
+test_validateCustomerPaymentProfileResponse = assertDecodes (undefined :: ValidateCustomerPaymentProfileResponse) $ [r|
+{
+    "directResponse": "1,1,1,This transaction has been approved.,8F14E1,Y,2149186958,none,Test transaction for ValidateCustomerPaymentProfile.,0.00,CC,auth_only,ydidgxugkfsjqpdmxwby,John,Doe,,123 Main St.,Bellevue,WA,98004,USA,000-000-0000,,enitsigjfk@authorize.net,,,,,,,,,0.00,0.00,0.00,FALSE,none,32CB5A012BEC7145759EDC186968351A,M,8,,,,,,,,,,,XXXX1111,Visa,,,,,,,,,,,,,,,,",
+    "messages": {
+        "resultCode": "Ok",
+        "message": [
+            {
+                "code": "I00001",
+                "text": "Successful."
+            }
+        ]
+    }
+}
+|]
+
+test_updateCustomerPaymentProfileResponse :: Assertion
+test_updateCustomerPaymentProfileResponse = assertDecodes (undefined :: UpdateCustomerPaymentProfileResponse) $ [r|
+{
+    "validationDirectResponse": "1,1,1,This transaction has been approved.,454ID3,Y,2149186959,none,Test transaction for ValidateCustomerPaymentProfile.,0.00,CC,auth_only,ydidgxugkfsjqpdmxwby,John,Doe,,123 Main St.,Bellevue,WA,98004,USA,000-000-0000,,enitsigjfk@authorize.net,,,,,,,,,0.00,0.00,0.00,FALSE,none,FDD599BEA746A09F7F32F220F402C849,M,8,,,,,,,,,,,XXXX1111,Visa,,,,,,,,,,,,,,,,",
+    "messages": {
+        "resultCode": "Ok",
+        "message": [
+            {
+                "code": "I00001",
+                "text": "Successful."
+            }
+        ]
+    }
+}
+|]
+
+test_deleteCustomerPaymentProfileResponse :: Assertion
+test_deleteCustomerPaymentProfileResponse = assertDecodes (undefined :: DeleteCustomerPaymentProfileResponse) $ [r|
 {
     "messages": {
         "resultCode": "Ok",
@@ -153,9 +323,17 @@ test_updateCustomerProfileResponse = assertDecodes (undefined :: UpdateCustomerP
 }
 |]
 
-test_deleteCustomerProfileResponse :: Assertion
-test_deleteCustomerProfileResponse = assertDecodes (undefined :: UpdateCustomerProfileResponse) $ [r|
+test_createCustomerProfileFromTransactionResponse :: Assertion
+test_createCustomerProfileFromTransactionResponse = assertDecodes (undefined :: CreateCustomerProfileFromTransactionResponse) $ [r|
 {
+    "customerProfileId": "190179",
+    "customerPaymentProfileIdList": [
+        "157500"
+    ],
+    "customerShippingAddressIdList": [
+        "126407"
+    ],
+    "validationDirectResponseList": [],
     "messages": {
         "resultCode": "Ok",
         "message": [
@@ -175,5 +353,12 @@ responseTests = testGroup "API Responses Encode and Decode to JSON correctly" [
       testCase "getCustomerProfileResponse" $ assertDecodes (undefined :: GetCustomerProfileResponse) apiExpected_getCustomerProfileResponse,
       testCase "getCustomerProfileIdsResponse" test_getCustomerProfileIdsResponse,
       testCase "updateCustomerProfileResponse" test_updateCustomerProfileResponse,
-      testCase "deleteCustomerProfileResponse" test_deleteCustomerProfileResponse
-      ]
+      testCase "deleteCustomerProfileResponse" test_deleteCustomerProfileResponse,
+      testCase "createCustomerPaymentProfileResponse" test_createCustomerPaymentProfileResponse,
+      testCase "getCustomerPaymentProfileResponse" test_getCustomerPaymentProfileResponse,
+      testCase "getCustomerPaymentProfileListResponse" test_getCustomerPaymentProfileListResponse,
+      testCase "validateCustomerPaymentProfileResponse" test_validateCustomerPaymentProfileResponse,
+      testCase "updateCustomerPaymentProfileResponse" test_updateCustomerPaymentProfileResponse,
+      testCase "deleteCustomerPaymentProfileResponse" test_deleteCustomerPaymentProfileResponse,
+      testCase "createCustomerProfileFromTransactionResponse" test_createCustomerProfileFromTransactionResponse
+     ]

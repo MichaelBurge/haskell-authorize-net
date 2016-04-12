@@ -1,4 +1,4 @@
-{-# LANGUAGE EmptyDataDecls, GADTs, StandaloneDeriving, OverloadedStrings, MultiParamTypeClasses, ScopedTypeVariables, TypeFamilies, FlexibleContexts, TemplateHaskell, GeneralizedNewtypeDeriving #-}
+{-# LANGUAGE EmptyDataDecls, GADTs, StandaloneDeriving, OverloadedStrings, MultiParamTypeClasses, ScopedTypeVariables, TypeFamilies, FlexibleContexts, TemplateHaskell, GeneralizedNewtypeDeriving, DeriveFoldable, OverloadedLists #-}
 
 -- | Implements the Authorize.NET JSON API. Types generally correspond to those defined in the XSD.
 -- | XSD location: https://api.authorize.net/xml/v1/schema/AnetApiSchema.xsd
@@ -19,6 +19,7 @@ import Data.Monoid
 import Data.Proxy
 import Data.String
 import GHC.Generics
+import GHC.Exts
 import Network.Wreq hiding (Proxy)
 
 import qualified Data.Text    as T
@@ -37,6 +38,21 @@ data ApiConfig = ApiConfig {
 
 newtype NumericString = NumericString Int deriving (Eq, Show, Num)
 newtype Decimal = Decimal T.Text deriving (Eq, Show, IsString, ToJSON, FromJSON)
+-- | Some Authorize.NET services in their JSON represent a single element as a single-element list, and others use an object. This type normalizes them into a list.
+data ArrayOf a = ArrayOf [a] deriving (Eq, Show, Foldable)
+
+instance FromJSON a => FromJSON (ArrayOf a) where
+  parseJSON value = case value of
+    Array _ -> ArrayOf <$> parseJSON value
+    _ -> ArrayOf <$> pure <$> parseJSON value
+
+instance ToJSON a => ToJSON (ArrayOf a) where
+  toJSON (ArrayOf xs) = toJSON xs
+
+instance IsList (ArrayOf a) where
+  type Item (ArrayOf a) = a
+  fromList xs = ArrayOf xs
+  toList (ArrayOf xs) = xs
 
 type CustomerAddressId = NumericString
 type CustomerProfileId = NumericString
@@ -352,7 +368,7 @@ $(deriveJSON dropRecordName ''CustomerPaymentProfileEx)
 data CustomerPaymentProfileMasked = CustomerPaymentProfileMasked {
   customerPaymentProfileMasked_customerProfileId        :: Maybe CustomerProfileId,
   customerPaymentProfileMasked_customerPaymentProfileId :: CustomerPaymentProfileId,
-  customerPaymentProfileMasked_payment                  :: PaymentMasked,
+  customerPaymentProfileMasked_payment                  :: Maybe PaymentMasked,
   customerPaymentProfileMasked_driversLicense           :: Maybe DriversLicense,
   customerPaymentProfileMasked_taxId                    :: Maybe TaxId,
   customerPaymentProfileMasked_subscriptionIds          :: Maybe [SubscriptionId]
@@ -384,6 +400,23 @@ data Paging = Paging {
   } deriving (Eq, Show)
 
 $(deriveJSON dropRecordName ''Paging)
+
+-- | anet:customerPaymentProfileListItemType
+data CustomerPaymentProfileListItem = CustomerPaymentProfileListItem {
+  customerPaymentProfileListItem_customerPaymentProfileId :: CustomerPaymentProfileId,
+  customerPaymentProfileListItem_customerProfileId        :: CustomerProfileId,
+  customerPaymentProfileListItem_billTo                   :: CustomerAddress,
+  customerPaymentProfileListItem_payment                  :: PaymentMasked
+  } deriving (Eq, Show)
+                                      
+$(deriveJSON dropRecordName ''CustomerPaymentProfileListItem)                                       
+
+-- | anet:arrayOfCustomerPaymentProfileListItemType
+data ArrayOfCustomerPaymentProfileListItem = ArrayOfCustomerPaymentProfileListItem {
+  arrayOfCustomerPaymentProfileListIitem_paymentProfile :: ArrayOf CustomerPaymentProfileListItem
+  } deriving (Eq, Show)
+
+$(deriveJSON dropRecordName ''ArrayOfCustomerPaymentProfileListItem)
 
 -- | anet:customerProfileBaseType
 data CustomerProfileBase = CustomerProfileBase {
@@ -645,7 +678,7 @@ $(deriveJSON dropRecordName ''Message)
 -- anet:messagesType
 data Messages = Messages {
   messages_resultCode :: MessageType,
-  messages_message    :: [Message]
+  messages_message    :: ArrayOf Message
   } deriving (Eq, Show)
 
 $(deriveJSON dropRecordName ''Messages)

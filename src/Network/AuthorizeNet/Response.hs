@@ -41,7 +41,7 @@ data GetCustomerProfileResponse = GetCustomerProfileResponse {
   getCustomerProfileResponse_sessionToken    :: Maybe T.Text,
   
   getCustomerProfileResponse_profile         :: CustomerProfileMasked,
-  getCustomerProfileResponse_subscriptionIds :: Maybe [SubscriptionId]
+  getCustomerProfileResponse_subscriptionIds :: ArrayOf SubscriptionId
   } deriving (Eq, Show)
 
 $(deriveJSON dropRecordName ''GetCustomerProfileResponse)
@@ -51,7 +51,7 @@ data GetCustomerProfileIdsResponse = GetCustomerProfileIdsResponse {
   getCustomerProfileIdsResponse_messages     :: Messages,
   getCustomerProfileIdsResponse_sessionToken :: Maybe T.Text,
 
-  getCustomerProfileIdsResponse_ids          :: [CustomerProfileId]
+  getCustomerProfileIdsResponse_ids          :: ArrayOf CustomerProfileId
   } deriving (Eq, Show)
 
 $(deriveJSON dropRecordName ''GetCustomerProfileIdsResponse)
@@ -72,3 +72,66 @@ data DeleteCustomerProfileResponse = DeleteCustomerProfileResponse {
 
 $(deriveJSON dropRecordName ''DeleteCustomerProfileResponse)
 
+data CreateCustomerPaymentProfileResponse = CreateCustomerPaymentProfileResponse {
+  createCustomerPaymentProfileResponse_refId        :: Maybe T.Text,
+  createCustomerPaymentProfileResponse_messages     :: Messages,
+  createCustomerPaymentProfileResponse_sessionToken :: Maybe T.Text,
+
+  createCustomerPaymentProfileResponse_customerPaymentProfileId :: Maybe CustomerPaymentProfileId,
+  createCustomerPaymentProfileResponse_validationDirectResponse :: Maybe T.Text
+  } deriving (Eq, Show)
+
+$(deriveJSON dropRecordName ''CreateCustomerPaymentProfileResponse)
+
+data GetCustomerPaymentProfileResponse = GetCustomerPaymentProfileResponse {
+  getCustomerPaymentProfileResponse_refId        :: Maybe T.Text,
+  getCustomerPaymentProfileResponse_messages     :: Messages,
+  getCustomerPaymentProfileResponse_sessionToken :: Maybe T.Text,
+
+  getCustomerPaymentProfileResponse_paymentProfile :: Maybe CustomerPaymentProfileMasked
+  } deriving (Eq, Show)
+
+$(deriveJSON dropRecordName ''GetCustomerPaymentProfileResponse)
+
+data GetCustomerPaymentProfileListResponse = R_getCustomerPaymentProfileListResponse {
+  getCustomerPaymentProfileListResponse_refId        :: Maybe T.Text,
+  getCustomerPaymentProfileListResponse_messages     :: Messages,
+  getCustomerPaymentProfileListResponse_sessionToken :: Maybe T.Text,
+
+  getCustomerPaymentProfileListResponse_totalNumInResultSet :: NumericString,
+  getCustomerPaymentProfileListResponse_paymentProfiles     :: Maybe ArrayOfCustomerPaymentProfileListItem
+  } | R_DummyConstructorForAeson deriving (Eq, Show)
+
+$(deriveJSON choiceType ''GetCustomerPaymentProfileListResponse)
+
+data ValidateCustomerPaymentProfileResponse = ValidateCustomerPaymentProfileResponse {
+  validateCustomerPaymentProfileResponse_refId        :: Maybe T.Text,
+  validateCustomerPaymentProfileResponse_messages     :: Messages,
+  validateCustomerPaymentProfileResponse_sessionToken :: Maybe T.Text
+  } deriving (Eq, Show)
+
+$(deriveJSON dropRecordName ''ValidateCustomerPaymentProfileResponse)
+
+data UpdateCustomerPaymentProfileResponse = UpdateCustomerPaymentProfileResponse {
+  updateCustomerPaymentProfileResponse_refId        :: Maybe T.Text,
+  updateCustomerPaymentProfileResponse_messages     :: Messages,
+  updateCustomerPaymentProfileResponse_sessionToken :: Maybe T.Text
+  } deriving (Eq, Show)
+
+$(deriveJSON dropRecordName ''UpdateCustomerPaymentProfileResponse)
+
+data DeleteCustomerPaymentProfileResponse = DeleteCustomerPaymentProfileResponse {
+  deleteCustomerPaymentProfileResponse_refId        :: Maybe T.Text,
+  deleteCustomerPaymentProfileResponse_messages     :: Messages,
+  deleteCustomerPaymentProfileResponse_sessionToken :: Maybe T.Text
+  } deriving (Eq, Show)
+
+$(deriveJSON dropRecordName ''DeleteCustomerPaymentProfileResponse)
+
+data CreateCustomerProfileFromTransactionResponse = CreateCustomerProfileFromTransactionResponse {
+  createCustomerProfileFromTransactionResponse_refId        :: Maybe T.Text,
+  createCustomerProfileFromTransactionResponse_messages     :: Messages,
+  createCustomerProfileFromTransactionResponse_sessionToken :: Maybe T.Text
+  } deriving (Eq, Show)
+
+$(deriveJSON dropRecordName ''CreateCustomerProfileFromTransactionResponse)
