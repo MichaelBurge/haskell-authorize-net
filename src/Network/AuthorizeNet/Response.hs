@@ -10,15 +10,15 @@ import Network.AuthorizeNet.Api
 import Network.AuthorizeNet.TH
 
 -- | The API responses are documented at http://developer.authorize.net/api/reference/index.html
-data AuthenticateTest = AuthenticateTest {
+data AuthenticateTestResponse = AuthenticateTestResponse {
   authenticateTest_refId        :: Maybe T.Text,
   authenticateTest_messages     :: Messages,
   authenticateTest_sessionToken :: Maybe T.Text
   } deriving (Eq, Show)
 
-$(deriveJSON dropRecordName ''AuthenticateTest)
+$(deriveJSON dropRecordName ''AuthenticateTestResponse)
 
-data CreateCustomerProfile = CreateCustomerProfile {
+data CreateCustomerProfileResponse = CreateCustomerProfileResponse {
   createCustomerProfile_refId                         :: Maybe T.Text,
   createCustomerProfile_messages                      :: Messages,
   createCustomerProfile_sessionToken                  :: Maybe T.Text,
@@ -30,7 +30,17 @@ data CreateCustomerProfile = CreateCustomerProfile {
   createCustomerProfile_validationDirectResponseList  :: [T.Text]
   } deriving (Eq, Show)
                    
-$(deriveJSON dropRecordName ''CreateCustomerProfile)
+$(deriveJSON dropRecordName ''CreateCustomerProfileResponse)
 
-mkAuthenticateTest :: Messages -> AuthenticateTest
-mkAuthenticateTest messages = AuthenticateTest Nothing messages Nothing
+mkAuthenticateTestResponse :: Messages -> AuthenticateTestResponse
+mkAuthenticateTestResponse messages = AuthenticateTestResponse Nothing messages Nothing
+
+data GetCustomerProfileResponse = GetCustomerProfileResponse {
+  getCustomerProfileResponse_refId           :: Maybe T.Text,
+  getCustomerProfileResponse_messages        :: Messages,
+  getCustomerProfileResponse_sessionToken    :: Maybe T.Text,
+  getCustomerProfileResponse_profile         :: CustomerProfileMasked,
+  getCustomerProfileResponse_subscriptionIds :: Maybe [SubscriptionId]
+  } deriving (Eq, Show)
+
+$(deriveJSON dropRecordName ''GetCustomerProfileResponse)

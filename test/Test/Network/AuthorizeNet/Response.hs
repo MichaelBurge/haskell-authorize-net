@@ -36,8 +36,8 @@ apiExpected_authenticateTestResponse = [r|
 }
 |]
 
-apiActual_authenticateTestResponse :: AuthenticateTest
-apiActual_authenticateTestResponse = mkAuthenticateTest testMessages
+apiActual_authenticateTestResponse :: AuthenticateTestResponse
+apiActual_authenticateTestResponse = mkAuthenticateTestResponse testMessages
 
 apiExpected_createCustomerProfileResponse :: String
 apiExpected_createCustomerProfileResponse = [r|
@@ -62,8 +62,8 @@ apiExpected_createCustomerProfileResponse = [r|
 }
 |]
 
-apiActual_createCustomerProfileResponse :: CreateCustomerProfile
-apiActual_createCustomerProfileResponse = CreateCustomerProfile {
+apiActual_createCustomerProfileResponse :: CreateCustomerProfileResponse
+apiActual_createCustomerProfileResponse = CreateCustomerProfileResponse {
   createCustomerProfile_refId = Nothing,                         
   createCustomerProfile_messages = testMessages,              
   createCustomerProfile_sessionToken = Nothing,      
@@ -74,8 +74,50 @@ apiActual_createCustomerProfileResponse = CreateCustomerProfile {
   }
 
 
+apiExpected_getCustomerProfileResponse :: String
+apiExpected_getCustomerProfileResponse = [r|
+{
+    "profile": {
+        "paymentProfiles": [
+            {
+                "customerPaymentProfileId": "35936989",
+                "payment": {
+                    "creditCard": {
+                        "cardNumber": "XXXX1111",
+                        "expirationDate": "XXXX"
+                    }
+                },
+                "customerType": "individual",
+                "billTo": {
+                    "firstName": "John",
+                    "lastName": "Smith"
+                }
+            }
+        ],
+        "customerProfileId": "39598611",
+        "merchantCustomerId": "CUST001",
+        "description": "Profile created by Subscription: 3078153",
+        "email": "joe@mail.com"
+    },
+    "subscriptionIds": [
+        "3078153",
+        "3078154"
+    ],
+    "messages": {
+        "resultCode": "Ok",
+        "message": [
+            {
+                "code": "I00001",
+                "text": "Successful."
+            }
+        ]
+    }
+}
+|]
+
 responseTests :: TestTree
 responseTests = testGroup "API Responses Encode and Decode to JSON correctly" [
       testCase "authenticateTestResponse" $ assertEncodes apiExpected_authenticateTestResponse apiActual_authenticateTestResponse,
-      testCase "createCustomerProfileResponse" $ assertEncodes apiExpected_createCustomerProfileResponse apiActual_createCustomerProfileResponse
+      testCase "createCustomerProfileResponse" $ assertEncodes apiExpected_createCustomerProfileResponse apiActual_createCustomerProfileResponse,
+      testCase "getCustomerProfileResponse" $ assertDecodes apiExpected_getCustomerProfileResponse $ (undefined :: GetCustomerProfileResponse)
       ]

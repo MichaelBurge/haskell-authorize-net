@@ -38,10 +38,12 @@ data ApiConfig = ApiConfig {
 newtype NumericString = NumericString Int deriving (Eq, Show, Num)
 newtype Decimal = Decimal T.Text deriving (Eq, Show, IsString, ToJSON, FromJSON)
 
+type CustomerAddressId = NumericString
 type CustomerProfileId = NumericString
 type CustomerPaymentProfileId = NumericString
 type CustomerShippingAddressId = NumericString
 type ShippingProfileId = NumericString
+type SubscriptionId = NumericString
 type TransactionId = NumericString
 type TaxId = T.Text
 
@@ -139,14 +141,40 @@ data NameAndAddress = NameAndAddress {
   nameAddress_country     :: T.Text
   } deriving (Eq, Show)
 
-    
+-- | anet:cardArt
+data CardArt = CardArt {
+  cardArt_cardBrand       :: Maybe T.Text,
+  cardArt_cardImageHeight :: Maybe T.Text,
+  cardArt_cardImageUrl    :: Maybe T.Text,
+  cardArt_cardImageWidth  :: Maybe T.Text,
+  cardArt_cardType        :: Maybe T.Text
+  } deriving (Eq, Show)
+
+$(deriveJSON dropRecordName ''CardArt)
+               
 data CreditCard = CreditCard {
+  -- Extension fields from anet:creditCardSimpleType
   creditCard_cardNumber     :: T.Text,
   creditCard_expirationDate :: T.Text,
-  creditCard_cardCode       :: Maybe NumericString
+  
+  creditCard_cardCode       :: Maybe NumericString,
+  creditCard_isPaymentToken :: Maybe Bool,
+  creditCard_cryptogram     :: Maybe T.Text
   } deriving (Eq, Show)
 
 $(deriveJSON dropRecordName ''CreditCard)
+
+mkCreditCard :: T.Text -> T.Text -> Maybe CardCode -> CreditCard
+mkCreditCard cardNumber expirationDate cardCode = CreditCard cardNumber expirationDate cardCode Nothing Nothing
+
+data CreditCardMasked = CreditCardMasked {
+  creditCardMasked_cardNumber     :: T.Text,
+  creditCardMasked_expirationDate :: T.Text,
+  creditCardMasked_cardType       :: Maybe T.Text,
+  creditCardMasked_cardArt        :: Maybe CardArt
+  } deriving (Eq, Show)
+
+$(deriveJSON dropRecordName ''CreditCardMasked)
 
 data CustomerAddress = CustomerAddress {
   customerAddress_firstName   :: Maybe T.Text,
@@ -157,6 +185,7 @@ data CustomerAddress = CustomerAddress {
   customerAddress_state       :: Maybe T.Text,
   customerAddress_zip         :: Maybe T.Text,
   customerAddress_country     :: Maybe T.Text,
+  
   customerAddress_phoneNumber :: Maybe T.Text,
   customerAddress_faxNumber   :: Maybe T.Text,
   customerAddress_email       :: Maybe T.Text
@@ -218,6 +247,18 @@ data BankAccount = BankAccount {
 
 $(deriveJSON dropRecordName ''BankAccount)
 
+-- | anet:bankAccountMaskedType
+data BankAccountMasked = BankAccountMasked {
+  bankAccountMasked_accountType   :: Maybe BankAccountType,
+  bankAccountMasked_routingNumber :: T.Text,
+  bankAccountMasked_accountNumber :: T.Text,
+  bankAccountMasked_nameOnAccount :: T.Text,
+  bankAccountMasked_echeckType    :: Maybe EcheckType,
+  bankAccountMasked_bankName      :: Maybe T.Text
+  } deriving (Eq, Show)
+
+$(deriveJSON dropRecordName ''BankAccountMasked)
+
 -- | anet:creditCardTrackType
 data CreditCardTrack = CreditCardTrack {
   creditCardTrack_track1   :: Maybe T.Text,
@@ -255,6 +296,24 @@ data Payment = Payment_creditCard CreditCard
 
 $(deriveJSON choiceType ''Payment)
 
+-- | anet:tokenMaskedType
+data TokenMasked = TokenMasked {
+  tokenMasked_tokenSource    :: Maybe T.Text,
+  tokenMasked_tokenNumber    :: T.Text,
+  tokenMasked_expirationDate :: T.Text
+  } deriving (Eq, Show)
+
+$(deriveJSON dropRecordName ''TokenMasked)
+
+-- | anet:paymentMaskedType
+
+data PaymentMasked = PaymentMasked_creditCard CreditCardMasked
+                   | PaymentMasked_bankAccount BankAccountMasked
+                   | PaymentMasked_tokenInformation TokenMasked
+                   deriving (Eq, Show)
+
+$(deriveJSON choiceType ''PaymentMasked)                            
+
 -- | anet:paymentProfile
 data PaymentProfile = PaymentProfile {
   paymentProfile_paymentProfileId :: NumericString,
@@ -288,6 +347,18 @@ data CustomerPaymentProfileEx = CustomerPaymentProfileEx {
   } deriving (Eq, Show)
 
 $(deriveJSON dropRecordName ''CustomerPaymentProfileEx)
+
+-- | anet:customerPaymentProfileMaskedType
+data CustomerPaymentProfileMasked = CustomerPaymentProfileMasked {
+  customerPaymentProfileMasked_customerProfileId        :: Maybe CustomerProfileId,
+  customerPaymentProfileMasked_customerPaymentProfileId :: CustomerPaymentProfileId,
+  customerPaymentProfileMasked_payment                  :: PaymentMasked,
+  customerPaymentProfileMasked_driversLicense           :: Maybe DriversLicense,
+  customerPaymentProfileMasked_taxId                    :: Maybe TaxId,
+  customerPaymentProfileMasked_subscriptionIds          :: Maybe [SubscriptionId]
+  } deriving (Eq, Show)
+                                    
+$(deriveJSON dropRecordName ''CustomerPaymentProfileMasked)
 
 -- | anet:CustomerPaymentProfileSearchTypeEnum
 data CustomerPaymentProfileSearchType = SearchType_cardsExpiringInMonth deriving (Eq, Show)
@@ -335,6 +406,40 @@ data CustomerProfile = CustomerProfile {
   } deriving (Eq, Show)
 
 $(deriveJSON dropRecordName ''CustomerProfile)
+
+-- | anet:customerAddressExType
+data CustomerAddressEx = CustomerAddressEx {
+  customerAddressEx_firstName :: Maybe T.Text,
+  customerAddressEx_lastName  :: Maybe T.Text,
+  customerAddressEx_company   :: Maybe T.Text,
+  customerAddressEx_address   :: Maybe T.Text,
+  customerAddressEx_city      :: Maybe T.Text,
+  customerAddressEx_state     :: Maybe T.Text,
+  customerAddressEx_zip       :: Maybe T.Text,
+  customerAddressEx_country   :: Maybe T.Text,
+  
+  customerAddressEx_phoneNumber :: Maybe T.Text,
+  customerAddressEx_faxNumber   :: Maybe T.Text,
+  customerAddressEx_email       :: Maybe T.Text,
+  
+  customerAddressEx_customerAddressId :: Maybe CustomerAddressId
+  } deriving (Eq, Show)
+
+$(deriveJSON dropRecordName ''CustomerAddressEx)
+
+-- | anet:customerProfileMaskedType
+data CustomerProfileMasked = CustomerProfileMasked {
+  customerProfileMasked_merchantCustomerId :: Maybe T.Text,
+  customerProfileMasked_description        :: Maybe T.Text,
+  customerProfileMasked_email              :: Maybe T.Text,
+  
+  customerProfileMasked_customerProfileId  :: Maybe NumericString,
+  
+  customerProfileMasked_paymentProfiles :: [CustomerPaymentProfileMasked],
+  customerProfileMasked_shipToList      :: Maybe CustomerAddressEx
+  } deriving (Eq, Show)
+
+$(deriveJSON dropRecordName ''CustomerProfileMasked)
 
 data ValidationMode = Validation_none
                     | Validation_testMode

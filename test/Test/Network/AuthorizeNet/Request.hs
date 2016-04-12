@@ -192,7 +192,9 @@ apiActual_createCustomerPaymentProfileRequest = CreateCustomerPaymentProfile tes
   customerPaymentProfile_payment = Just $ Payment_creditCard $ CreditCard {
       creditCard_cardNumber = "4111111111111111",
       creditCard_expirationDate = "2023-12",
-      creditCard_cardCode = Nothing
+      creditCard_cardCode = Nothing,
+      creditCard_isPaymentToken = Nothing,
+      creditCard_cryptogram = Nothing
       },
   customerPaymentProfile_driversLicense = Nothing,
   customerPaymentProfile_taxId = Nothing
@@ -317,7 +319,9 @@ apiActual_updateCustomerPaymentProfileRequest =
         customerPaymentProfileEx_payment                  = Just $ Payment_creditCard $ CreditCard {
             creditCard_cardNumber = "4111111111111111",
             creditCard_expirationDate = "2026-01",
-            creditCard_cardCode = Nothing
+            creditCard_cardCode = Nothing,
+            creditCard_isPaymentToken = Nothing,
+            creditCard_cryptogram = Nothing
             },
         customerPaymentProfileEx_driversLicense           = Nothing,
         customerPaymentProfileEx_taxId                    = Nothing,

@@ -3,7 +3,9 @@
 module Test.Network.AuthorizeNet.Util where
 
 import Data.Aeson
+import Data.Maybe
 import Data.Monoid
+import Data.Proxy
 import Test.HUnit
 
 import qualified Data.ByteString.Lazy as BSL
@@ -32,7 +34,9 @@ testCustomerProfile = CustomerProfile {
       customerPaymentProfile_payment = Just $ Payment_creditCard CreditCard {
           creditCard_cardNumber = "4111111111111111",
           creditCard_expirationDate = "2020-12",
-          creditCard_cardCode = Nothing
+          creditCard_cardCode = Nothing,
+          creditCard_isPaymentToken = Nothing,
+          creditCard_cryptogram = Nothing
           }
       },
   customer_shipTos            = Nothing
@@ -48,3 +52,7 @@ assertEncodes expectedS actual = do
     Left e -> error $ "Error parsing '" <> expectedS <> "': " <> show e
     Right expectedBs -> assertEqual "" expectedBs actualBs
 
+assertDecodes :: (FromJSON a, ToJSON a) => String -> a -> Assertion
+assertDecodes xS dummy =
+  let x = fromJust $ decode $ TL.encodeUtf8 $ TL.pack xS
+  in assertEncodes xS $ x `asTypeOf` dummy
