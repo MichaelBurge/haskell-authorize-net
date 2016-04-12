@@ -107,7 +107,9 @@ $(deriveJSON choiceType ''GetCustomerPaymentProfileListResponse)
 data ValidateCustomerPaymentProfileResponse = ValidateCustomerPaymentProfileResponse {
   validateCustomerPaymentProfileResponse_refId        :: Maybe T.Text,
   validateCustomerPaymentProfileResponse_messages     :: Messages,
-  validateCustomerPaymentProfileResponse_sessionToken :: Maybe T.Text
+  validateCustomerPaymentProfileResponse_sessionToken :: Maybe T.Text,
+
+  validateCustomerPaymentProfileResponse_directResponse :: Maybe T.Text
   } deriving (Eq, Show)
 
 $(deriveJSON dropRecordName ''ValidateCustomerPaymentProfileResponse)
@@ -115,7 +117,9 @@ $(deriveJSON dropRecordName ''ValidateCustomerPaymentProfileResponse)
 data UpdateCustomerPaymentProfileResponse = UpdateCustomerPaymentProfileResponse {
   updateCustomerPaymentProfileResponse_refId        :: Maybe T.Text,
   updateCustomerPaymentProfileResponse_messages     :: Messages,
-  updateCustomerPaymentProfileResponse_sessionToken :: Maybe T.Text
+  updateCustomerPaymentProfileResponse_sessionToken :: Maybe T.Text,
+
+  updateCustomerPaymentProfileResponse_validationDirectResponse :: Maybe T.Text
   } deriving (Eq, Show)
 
 $(deriveJSON dropRecordName ''UpdateCustomerPaymentProfileResponse)
@@ -127,11 +131,3 @@ data DeleteCustomerPaymentProfileResponse = DeleteCustomerPaymentProfileResponse
   } deriving (Eq, Show)
 
 $(deriveJSON dropRecordName ''DeleteCustomerPaymentProfileResponse)
-
-data CreateCustomerProfileFromTransactionResponse = CreateCustomerProfileFromTransactionResponse {
-  createCustomerProfileFromTransactionResponse_refId        :: Maybe T.Text,
-  createCustomerProfileFromTransactionResponse_messages     :: Messages,
-  createCustomerProfileFromTransactionResponse_sessionToken :: Maybe T.Text
-  } deriving (Eq, Show)
-
-$(deriveJSON dropRecordName ''CreateCustomerProfileFromTransactionResponse)

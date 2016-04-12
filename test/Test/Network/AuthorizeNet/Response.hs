@@ -244,6 +244,7 @@ test_getCustomerPaymentProfileResponse =
         customerPaymentProfileMasked_subscriptionIds = Just [ 3078153, 3078154 ]
       }
   in assertEncodes text response
+
 test_getCustomerPaymentProfileListResponse :: Assertion
 test_getCustomerPaymentProfileListResponse =
   let text = [r|
@@ -288,8 +289,10 @@ test_getCustomerPaymentProfileListResponse =
                    customerPaymentProfileListItem_payment = PaymentMasked_creditCard $ mkCreditCardMasked "XXXX1111" "XXXX"
                }
   in assertEncodes text response
+
 test_validateCustomerPaymentProfileResponse :: Assertion
-test_validateCustomerPaymentProfileResponse = assertDecodes (undefined :: ValidateCustomerPaymentProfileResponse) $ [r|
+test_validateCustomerPaymentProfileResponse =
+  let text = [r|
 {
     "directResponse": "1,1,1,This transaction has been approved.,8F14E1,Y,2149186958,none,Test transaction for ValidateCustomerPaymentProfile.,0.00,CC,auth_only,ydidgxugkfsjqpdmxwby,John,Doe,,123 Main St.,Bellevue,WA,98004,USA,000-000-0000,,enitsigjfk@authorize.net,,,,,,,,,0.00,0.00,0.00,FALSE,none,32CB5A012BEC7145759EDC186968351A,M,8,,,,,,,,,,,XXXX1111,Visa,,,,,,,,,,,,,,,,",
     "messages": {
@@ -303,9 +306,12 @@ test_validateCustomerPaymentProfileResponse = assertDecodes (undefined :: Valida
     }
 }
 |]
+      response = ValidateCustomerPaymentProfileResponse Nothing testMessages Nothing $ Just "1,1,1,This transaction has been approved.,8F14E1,Y,2149186958,none,Test transaction for ValidateCustomerPaymentProfile.,0.00,CC,auth_only,ydidgxugkfsjqpdmxwby,John,Doe,,123 Main St.,Bellevue,WA,98004,USA,000-000-0000,,enitsigjfk@authorize.net,,,,,,,,,0.00,0.00,0.00,FALSE,none,32CB5A012BEC7145759EDC186968351A,M,8,,,,,,,,,,,XXXX1111,Visa,,,,,,,,,,,,,,,,"
+  in assertEncodes text response
 
 test_updateCustomerPaymentProfileResponse :: Assertion
-test_updateCustomerPaymentProfileResponse = assertDecodes (undefined :: UpdateCustomerPaymentProfileResponse) $ [r|
+test_updateCustomerPaymentProfileResponse =
+  let text = [r|
 {
     "validationDirectResponse": "1,1,1,This transaction has been approved.,454ID3,Y,2149186959,none,Test transaction for ValidateCustomerPaymentProfile.,0.00,CC,auth_only,ydidgxugkfsjqpdmxwby,John,Doe,,123 Main St.,Bellevue,WA,98004,USA,000-000-0000,,enitsigjfk@authorize.net,,,,,,,,,0.00,0.00,0.00,FALSE,none,FDD599BEA746A09F7F32F220F402C849,M,8,,,,,,,,,,,XXXX1111,Visa,,,,,,,,,,,,,,,,",
     "messages": {
@@ -319,9 +325,12 @@ test_updateCustomerPaymentProfileResponse = assertDecodes (undefined :: UpdateCu
     }
 }
 |]
+      response = UpdateCustomerPaymentProfileResponse Nothing testMessages Nothing $ Just "1,1,1,This transaction has been approved.,454ID3,Y,2149186959,none,Test transaction for ValidateCustomerPaymentProfile.,0.00,CC,auth_only,ydidgxugkfsjqpdmxwby,John,Doe,,123 Main St.,Bellevue,WA,98004,USA,000-000-0000,,enitsigjfk@authorize.net,,,,,,,,,0.00,0.00,0.00,FALSE,none,FDD599BEA746A09F7F32F220F402C849,M,8,,,,,,,,,,,XXXX1111,Visa,,,,,,,,,,,,,,,,"
+  in assertEncodes text response
 
 test_deleteCustomerPaymentProfileResponse :: Assertion
-test_deleteCustomerPaymentProfileResponse = assertDecodes (undefined :: DeleteCustomerPaymentProfileResponse) $ [r|
+test_deleteCustomerPaymentProfileResponse =
+  let text = [r|
 {
     "messages": {
         "resultCode": "Ok",
@@ -334,9 +343,11 @@ test_deleteCustomerPaymentProfileResponse = assertDecodes (undefined :: DeleteCu
     }
 }
 |]
-
+      response = DeleteCustomerPaymentProfileResponse Nothing testMessages Nothing
+  in assertEncodes text response
 test_createCustomerProfileFromTransactionResponse :: Assertion
-test_createCustomerProfileFromTransactionResponse = assertDecodes (undefined :: CreateCustomerProfileFromTransactionResponse) $ [r|
+test_createCustomerProfileFromTransactionResponse =
+  let text = [r|
 {
     "customerProfileId": "190179",
     "customerPaymentProfileIdList": [
@@ -357,6 +368,8 @@ test_createCustomerProfileFromTransactionResponse = assertDecodes (undefined :: 
     }
 }
 |]
+      response = CreateCustomerProfileResponse Nothing testMessages Nothing (Just 190179) [ 157500 ] [ 126407 ] []
+  in assertEncodes text response
 
 responseTests :: TestTree
 responseTests = testGroup "API Responses Encode and Decode to JSON correctly" [
