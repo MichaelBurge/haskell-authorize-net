@@ -1,6 +1,6 @@
-name:                haskell-authorize-net
+name:                authorize-net
 version:             0.1.0.0
-synopsis:            Initial project template from stack
+synopsis:            Unofficial Haskell SDK for the Authorize.NET API
 description:         Please see README.md
 homepage:            http://github.com/MichaelBurge/haskell-authorize-net#readme
 license:             BSD3
@@ -29,14 +29,18 @@ library
                      , mtl
   default-language:    Haskell2010
 
-test-suite haskell-authorize-net-test
+test-suite authorize-net-test
   type:                exitcode-stdio-1.0
   hs-source-dirs:      test
   main-is:             Spec.hs
+  other-modules:       Test.Network.AuthorizeNet.Api
+                     , Test.Network.AuthorizeNet.Request
+                     , Test.Network.AuthorizeNet.Response
+                     , Test.Network.AuthorizeNet.Util
   build-depends:       base
                      , aeson
                      , bytestring
-                     , haskell-authorize-net
+                     , authorize-net
                      , tasty
                      , tasty-hunit
                      , HUnit
