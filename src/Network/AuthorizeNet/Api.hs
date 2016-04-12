@@ -157,6 +157,8 @@ data NameAndAddress = NameAndAddress {
   nameAddress_country     :: T.Text
   } deriving (Eq, Show)
 
+$(deriveJSON dropRecordName ''NameAndAddress)
+
 -- | anet:cardArt
 data CardArt = CardArt {
   cardArt_cardBrand       :: Maybe T.Text,
@@ -623,6 +625,8 @@ data EmvResponse = EmvResponse {
   emvResponse_tag     :: Maybe T.Text
   } deriving (Eq, Show)
 
+$(deriveJSON dropRecordName ''EmvResponse)
+
 -- | anet:transactionRequestType
 data TransactionRequest = TransactionRequest {
   transactionRequest_transactionType          :: TransactionType,
@@ -666,7 +670,7 @@ extract member value = withObject (T.unpack member) (.: member) value
 mExtract :: FromJSON a => T.Text -> Value -> Parser (Maybe a)
 mExtract member value = withObject (T.unpack member) (.:? member) value
 
--- anet:messageTypeEnum
+-- | anet:messageTypeEnum
 data MessageType = Message_Ok
                  | Message_Error
                  deriving (Eq, Show)
@@ -680,14 +684,51 @@ data Message = Message {
 
 $(deriveJSON dropRecordName ''Message)
 
--- anet:messagesType
+-- | anet:messagesType
 data Messages = Messages {
   messages_resultCode :: MessageType,
   messages_message    :: ArrayOf Message
   } deriving (Eq, Show)
 
 $(deriveJSON dropRecordName ''Messages)
-  
+
+-- | anet:transactionResponse has an element called 'prePaidCard' with an anonymous type
+data PrePaidCard = PrePaidCard {
+  prePaidCard_requestedAmount :: Maybe T.Text,
+  prePaidCard_approvedAmount  :: Maybe T.Text,
+  prePaidCard_balanceOnCard   :: Maybe T.Text
+  } deriving (Eq, Show)
+
+$(deriveJSON dropRecordName ''PrePaidCard)
+
+data TransactionResponse_message = TransactionResponse_message {
+  transactionResponseMessage_code        :: Maybe T.Text,
+  transactionResponseMessage_description :: Maybe T.Text
+  } deriving (Eq, Show)
+
+$(deriveJSON choiceType ''TransactionResponse_message)
+
+data TransactionResponse_error = TransactionResponse_error {
+  transactionResponseError_errorCode :: Maybe T.Text,
+  transactionResponseError_errorText :: Maybe T.Text
+  } deriving (Eq, Show)
+
+$(deriveJSON choiceType ''TransactionResponse_error)
+
+data TransactionResponse_splitTenderPayment = TransactionResponse_splitTenderPayment {
+  transactionResponseSplitTenderPayment_transId            :: Maybe T.Text,
+  transactionResponseSplitTenderPayment_responseCode       :: Maybe T.Text,
+  transactionResponseSplitTenderPayment_responseToCustomer :: Maybe T.Text,
+  transactionResponseSplitTenderPayment_authCode           :: Maybe T.Text,
+  transactionResponseSplitTenderPayment_accountNumber      :: Maybe T.Text,
+  transactionResponseSplitTenderPayment_accountType        :: Maybe T.Text,
+  transactionResponseSplitTenderPayment_requestedAmount    :: Maybe T.Text,
+  transactionResponseSplitTenderPayment_approvedAmount     :: Maybe T.Text,
+  transactionResponseSplitTenderPayment_balanceOnCard      :: Maybe T.Text              
+  } | D3_DummyForAeson deriving (Eq, Show)
+
+$(deriveJSON choiceType ''TransactionResponse_splitTenderPayment)
+                                             
 -- data ApiError = ErrorResponseDecoding T.Text
 --               deriving (Show)
 

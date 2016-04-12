@@ -1,4 +1,4 @@
-{-# LANGUAGE QuasiQuotes, OverloadedStrings, OverloadedLists #-}
+{-# LANGUAGE QuasiQuotes, OverloadedStrings #-}
 
 module Test.Network.AuthorizeNet.Response (responseTests) where
 
@@ -19,7 +19,7 @@ import Test.Tasty.HUnit
 import Test.Network.AuthorizeNet.Util
 
 testMessages :: Messages
-testMessages = Messages Message_Ok $ [ Message "I00001" "Successful." ]
+testMessages = Messages Message_Ok $ ArrayOf [ Message "I00001" "Successful." ]
 
 apiExpected_authenticateTestResponse :: String
 apiExpected_authenticateTestResponse = [r|
@@ -138,7 +138,7 @@ test_getCustomerProfileIdsResponse =
     }
 }
 |]
-      response = GetCustomerProfileIdsResponse Nothing testMessages Nothing [47988, 47997, 48458, 48468, 189118, 190178 ]
+      response = GetCustomerProfileIdsResponse Nothing testMessages Nothing $ ArrayOf [47988, 47997, 48458, 48468, 189118, 190178 ]
   in assertEncodes text response
 
 test_updateCustomerProfileResponse :: Assertion
@@ -371,6 +371,72 @@ test_createCustomerProfileFromTransactionResponse =
       response = CreateCustomerProfileResponse Nothing testMessages Nothing (Just 190179) [ 157500 ] [ 126407 ] []
   in assertEncodes text response
 
+test_chargeCustomerProfile :: Assertion
+test_chargeCustomerProfile =
+  let text = [r|
+{
+    "transactionResponse": {
+        "responseCode": "1",
+        "authCode": "C1E3I6",
+        "avsResultCode": "Y",
+        "cvvResultCode": "S",
+        "cavvResultCode": "9",
+        "transId": "2149186775",
+        "refTransID": "",
+        "transHash": "C85B15CED28462974F1114DB07A16C39",
+        "testRequest": "0",
+        "accountNumber": "XXXX0015",
+        "accountType": "MasterCard",
+        "messages": [
+            {
+                "code": "1",
+                "description": "This transaction has been approved."
+            }
+        ],
+        "userFields": [
+            {
+                "name": "MerchantDefinedFieldName1",
+                "value": "MerchantDefinedFieldValue1"
+            },
+            {
+                "name": "favorite_color",
+                "value": "blue"
+            }
+        ]
+    },
+    "refId": "123456",
+    "messages": {
+        "resultCode": "Ok",
+        "message": [
+            {
+                "code": "I00001",
+                "text": "Successful."
+            }
+        ]
+    }
+}
+|]
+      transactionResponse = mkTransactionResponse {
+        transactionResponse_responseCode = Just "1",
+        transactionResponse_authCode = Just "C1E3I6",
+        transactionResponse_avsResultCode = Just "Y",
+        transactionResponse_cvvResultCode = Just "S",
+        transactionResponse_cavvResultCode = Just "9",
+        transactionResponse_transId = Just "2149186775",
+        transactionResponse_refTransID = Just "",
+        transactionResponse_transHash = Just "C85B15CED28462974F1114DB07A16C39",
+        transactionResponse_testRequest = Just "0",
+        transactionResponse_accountNumber = Just "XXXX0015",
+        transactionResponse_accountType = Just "MasterCard",
+        transactionResponse_messages = Just $ ArrayOf $ pure $ TransactionResponse_message (Just "1") (Just "This transaction has been approved."),
+        transactionResponse_userFields = Just $ ArrayOf [
+            UserField "MerchantDefinedFieldName1" "MerchantDefinedFieldValue1",
+            UserField "favorite_color" "blue"
+        ]
+      }
+      response = CreateTransactionResponse (Just "123456") testMessages Nothing transactionResponse Nothing
+  in assertEncodes text response
+
 responseTests :: TestTree
 responseTests = testGroup "API Responses Encode and Decode to JSON correctly" [
       testCase "authenticateTestResponse" $ assertEncodes apiExpected_authenticateTestResponse apiActual_authenticateTestResponse,
@@ -385,5 +451,6 @@ responseTests = testGroup "API Responses Encode and Decode to JSON correctly" [
       testCase "validateCustomerPaymentProfileResponse" test_validateCustomerPaymentProfileResponse,
       testCase "updateCustomerPaymentProfileResponse" test_updateCustomerPaymentProfileResponse,
       testCase "deleteCustomerPaymentProfileResponse" test_deleteCustomerPaymentProfileResponse,
-      testCase "createCustomerProfileFromTransactionResponse" test_createCustomerProfileFromTransactionResponse
+      testCase "createCustomerProfileFromTransactionResponse" test_createCustomerProfileFromTransactionResponse,
+      testCase "chargeCustomerProfile" test_chargeCustomerProfile
      ]

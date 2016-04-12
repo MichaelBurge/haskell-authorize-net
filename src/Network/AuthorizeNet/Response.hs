@@ -131,3 +131,54 @@ data DeleteCustomerPaymentProfileResponse = DeleteCustomerPaymentProfileResponse
   } deriving (Eq, Show)
 
 $(deriveJSON dropRecordName ''DeleteCustomerPaymentProfileResponse)
+
+data CreateProfileResponse = CreateProfileResponse {
+  createProfileResponse_messages                      :: Messages,
+  createProfileResponse_customerProfileId             :: Maybe CustomerProfileId,
+  createProfileResponse_customerPaymentProfileIdList  :: Maybe (ArrayOf CustomerPaymentProfileId),
+  createProfileResponse_customerShippingAddressIdList :: Maybe (ArrayOf CustomerShippingAddressId)
+  } deriving (Eq, Show)
+                             
+$(deriveJSON dropRecordName ''CreateProfileResponse)
+
+data TransactionResponse = TransactionResponse {
+  transactionResponse_responseCode        :: Maybe T.Text,
+  transactionResponse_rawResponseCode     :: Maybe T.Text,
+  transactionResponse_authCode            :: Maybe T.Text,
+  transactionResponse_avsResultCode       :: Maybe T.Text,
+  transactionResponse_cvvResultCode       :: Maybe T.Text,
+  transactionResponse_cavvResultCode      :: Maybe T.Text,
+  transactionResponse_transId             :: Maybe T.Text,
+  transactionResponse_refTransID          :: Maybe T.Text,
+  transactionResponse_transHash           :: Maybe T.Text,
+  transactionResponse_testRequest         :: Maybe T.Text,
+  transactionResponse_accountNumber       :: Maybe T.Text,
+  transactionResponse_accountType         :: Maybe T.Text,
+  transactionResponse_entryMode           :: Maybe T.Text,
+  transactionResponse_splitTenderId       :: Maybe T.Text,
+  transactionResponse_prePaidCard         :: Maybe PrePaidCard,
+  transactionResponse_messages            :: Maybe (ArrayOf TransactionResponse_message),
+  transactionResponse_errors              :: Maybe (ArrayOf TransactionResponse_error),
+  transactionResponse_splitTenderPayments :: Maybe (ArrayOf TransactionResponse_splitTenderPayment),
+  transactionResponse_userFields          :: Maybe (ArrayOf UserField),
+  transactionResponse_shipTo              :: Maybe NameAndAddress,
+  transactionResponse_secureAcceptance    :: Maybe SecureAcceptance,
+  transactionResponse_emvResponse         :: Maybe EmvResponse
+  } deriving (Eq, Show)
+
+$(deriveJSON dropRecordName ''TransactionResponse)
+
+mkTransactionResponse :: TransactionResponse
+mkTransactionResponse = TransactionResponse Nothing Nothing Nothing Nothing Nothing Nothing  Nothing Nothing  Nothing Nothing  Nothing Nothing  Nothing Nothing  Nothing Nothing  Nothing Nothing  Nothing Nothing  Nothing Nothing 
+
+data CreateTransactionResponse = CreateTransactionResponse {
+  createTransactionResponse_refId        :: Maybe T.Text,
+  createTransactionResponse_messages     :: Messages,
+  createTransactionResponse_sessionToken :: Maybe T.Text,
+
+  createTransactionResponse_transactionResponse :: TransactionResponse,
+  createTransactionResponse_profileResponse     :: Maybe CreateProfileResponse
+  } deriving (Eq, Show)
+
+$(deriveJSON dropRecordName ''CreateTransactionResponse)
+
