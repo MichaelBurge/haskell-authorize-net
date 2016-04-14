@@ -15,7 +15,8 @@ cabal-version:       >=1.10
 
 library
   hs-source-dirs:      src
-  exposed-modules:     Network.AuthorizeNet.Request
+  exposed-modules:     Network.AuthorizeNet.Api
+                     , Network.AuthorizeNet.Request
                      , Network.AuthorizeNet.Response
                      , Network.AuthorizeNet.TH
                      , Network.AuthorizeNet.Types
@@ -27,6 +28,7 @@ library
                      , text
                      , either
                      , mtl
+                     , bytestring
   default-language:    Haskell2010
 
 test-suite authorize-net-test

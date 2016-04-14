@@ -2,10 +2,13 @@
 
 module Network.AuthorizeNet.Response where
 
+import Data.Aeson
 import Data.Aeson.TH
 
+import qualified Data.ByteString.Lazy as BSL
 import qualified Data.Text as T
 
+import Network.AuthorizeNet.Request
 import Network.AuthorizeNet.TH
 import Network.AuthorizeNet.Types
 
@@ -169,7 +172,7 @@ data TransactionResponse = TransactionResponse {
 $(deriveJSON dropRecordName ''TransactionResponse)
 
 mkTransactionResponse :: TransactionResponse
-mkTransactionResponse = TransactionResponse Nothing Nothing Nothing Nothing Nothing Nothing  Nothing Nothing  Nothing Nothing  Nothing Nothing  Nothing Nothing  Nothing Nothing  Nothing Nothing  Nothing Nothing  Nothing Nothing 
+mkTransactionResponse = TransactionResponse Nothing Nothing Nothing Nothing Nothing Nothing  Nothing Nothing  Nothing Nothing  Nothing Nothing  Nothing Nothing  Nothing Nothing  Nothing Nothing  Nothing Nothing Nothing Nothing 
 
 data CreateTransactionResponse = CreateTransactionResponse {
   createTransactionResponse_refId        :: Maybe T.Text,
@@ -182,3 +185,32 @@ data CreateTransactionResponse = CreateTransactionResponse {
 
 $(deriveJSON dropRecordName ''CreateTransactionResponse)
 
+data ApiResponse = R_GetCustomerProfile GetCustomerProfileResponse
+                 | R_GetCustomerProfileIds GetCustomerProfileIdsResponse
+                 | R_UpdateCustomerProfile UpdateCustomerProfileResponse
+                 | R_DeleteCustomerProfile DeleteCustomerProfileResponse
+                 | R_CreateCustomerPaymentProfile CreateCustomerPaymentProfileResponse
+                 | R_GetCustomerPaymentProfile GetCustomerPaymentProfileResponse
+                 | R_GetCustomerPaymentProfileList GetCustomerPaymentProfileListResponse
+                 | R_ValidateCustomerPaymentProfile ValidateCustomerPaymentProfileResponse
+                 | R_UpdateCustomerPaymentProfile UpdateCustomerPaymentProfileResponse
+                 | R_DeleteCustomerPaymentProfile DeleteCustomerPaymentProfileResponse
+                 | R_CreateProfile CreateProfileResponse
+                 | R_CreateTransaction CreateTransactionResponse
+                 deriving (Eq, Show)
+
+-- | Decodes a bytestring into the appropriate response given a request
+decodeRequestResponse :: ApiRequest -> BSL.ByteString -> Either String ApiResponse
+decodeRequestResponse apiRequest bsl = case apiRequest of
+  GetCustomerProfile{}             -> R_GetCustomerProfile             <$> eitherDecode' bsl
+  GetCustomerProfileIds{}          -> R_GetCustomerProfileIds          <$> eitherDecode' bsl
+  UpdateCustomerProfile{}          -> R_UpdateCustomerProfile          <$> eitherDecode' bsl
+  DeleteCustomerProfile{}          -> R_DeleteCustomerProfile          <$> eitherDecode' bsl
+  CreateCustomerPaymentProfile{}   -> R_CreateCustomerPaymentProfile   <$> eitherDecode' bsl
+  GetCustomerPaymentProfile{}      -> R_GetCustomerPaymentProfile      <$> eitherDecode' bsl
+  GetCustomerPaymentProfileList{}  -> R_GetCustomerPaymentProfileList  <$> eitherDecode' bsl
+  ValidateCustomerPaymentProfile{} -> R_ValidateCustomerPaymentProfile <$> eitherDecode' bsl
+  UpdateCustomerPaymentProfile{}   -> R_UpdateCustomerPaymentProfile   <$> eitherDecode' bsl
+  DeleteCustomerPaymentProfile{}   -> R_DeleteCustomerPaymentProfile   <$> eitherDecode' bsl
+  CreateCustomerProfile{}          -> R_CreateProfile                  <$> eitherDecode' bsl
+  CreateTransaction{}              -> R_CreateTransaction              <$> eitherDecode' bsl

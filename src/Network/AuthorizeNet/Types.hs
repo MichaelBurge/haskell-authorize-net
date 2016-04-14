@@ -32,7 +32,7 @@ import Network.AuthorizeNet.TH
 -- | If you had a mock of their API set up somewhere for unit tests, you would use it by creating a value of this type.
 -- | This and 'MerchantAuthentication' are required for every request
 data ApiConfig = ApiConfig {
-  apiConfig_baseUrl :: T.Text
+  apiConfig_baseUrl :: String
   } deriving (Show)
 
 
@@ -74,18 +74,6 @@ instance FromJSON NumericString where
 
 instance ToJSON NumericString where
   toJSON (NumericString x) = String $ T.pack $ show x
-
--- | The sandbox endpoint for Authorize.NET
-sandboxApiConfig :: ApiConfig
-sandboxApiConfig = ApiConfig {
-  apiConfig_baseUrl = "https://apitest.authorize.net/xml/v1/request.api"
-  }
-
--- | The production endpoint for Authorize.NET
-productionApiConfig :: ApiConfig
-productionApiConfig = ApiConfig {
-  apiConfig_baseUrl = "https://api.authorize.net/xml/v1/request.api"
-  }
 
 -- | Holds API credentials for Authorize.NET. You should get these when you sign up for a sandbox or production account.
 -- | This and 'ApiConfig' are required for every request.
