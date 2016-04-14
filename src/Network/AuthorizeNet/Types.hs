@@ -36,7 +36,7 @@ data ApiConfig = ApiConfig {
   } deriving (Show)
 
 
-newtype NumericString = NumericString Int deriving (Eq, Show, Num)
+newtype NumericString = NumericString Int deriving (Eq, Ord, Show, Num)
 newtype Decimal = Decimal T.Text deriving (Eq, Show, IsString, ToJSON, FromJSON)
 -- | Some Authorize.NET services in their JSON represent a single element as a single-element list, and others use an object. This type normalizes them into a list.
 data ArrayOf a = ArrayOf [a] deriving (Eq, Show, Foldable)
@@ -547,6 +547,9 @@ data CustomerData = CustomerData {
 
 $(deriveJSON dropRecordName ''CustomerData)
 
+mkCustomerData :: CustomerData
+mkCustomerData = CustomerData Nothing Nothing Nothing Nothing Nothing
+
 -- | anet:ccAuthenticationType
 data CcAuthentication = CcAuthentication {
   ccAuthentication_authenticationIndicator       :: T.Text,
@@ -565,6 +568,7 @@ data TransRetailInfo = TransRetailInfo {
 $(deriveJSON dropRecordName ''TransRetailInfo)
 
 data SettingName = SettingName_emailCustomer
+                 -- | Sends an email to the merchant email address on your Authorize.NET after every purchase
                  | SettingName_merchantEmail
                  | SettingName_allowPartialAuth
                  | SettingName_headerEmailReceipt
@@ -618,14 +622,20 @@ $(deriveJSON dropRecordName ''EmvResponse)
 -- | anet:transactionRequestType
 data TransactionRequest = TransactionRequest {
   transactionRequest_transactionType          :: TransactionType,
+  -- | Total amount(including taxes, duty, shipping, etc.) to charge the card. A decimal number like "8.45".
   transactionRequest_amount                   :: Decimal,
+  -- | Currency code. A common one is "USD".
   transactionRequest_currencyCode             :: Maybe T.Text,
   transactionRequest_payment                  :: Maybe Payment,
   transactionRequest_profile                  :: Maybe CustomerProfilePayment,
   transactionRequest_solution                 :: Maybe Solution,
   transactionRequest_callId                   :: Maybe T.Text,
+  -- | An identification number assigned to each POS (Point of Sale) device by a merchant's processor. This number allows the processor to identify the source of a transaction.
   transactionRequest_terminalNumber           :: Maybe T.Text,
+  -- | Authorization code. This may have been obtained from a verbal authorization or through another channel.
   transactionRequest_authCode                 :: Maybe T.Text,
+  -- | Transaction ID of the original partial authorization transaction. 
+  -- | Required only for refundTransaction, priorAuthCaptureTransaction, and voidTransaction. Do not include this field if you are providing splitTenderId
   transactionRequest_refTransId               :: Maybe T.Text,
   transactionRequest_splitTenderId            :: Maybe T.Text,
   transactionRequest_order                    :: Maybe Order,
