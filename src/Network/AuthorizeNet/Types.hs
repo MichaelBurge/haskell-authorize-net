@@ -522,7 +522,7 @@ $(deriveJSON dropRecordName ''LineItem)
 
 -- | anet:ArrayOfLineItem
 data LineItems = LineItems {
-  lineItems_lineItem :: LineItem
+  lineItems_lineItem :: ArrayOf LineItem
   } deriving (Eq, Show)
 
 $(deriveJSON dropRecordName ''LineItems)                 

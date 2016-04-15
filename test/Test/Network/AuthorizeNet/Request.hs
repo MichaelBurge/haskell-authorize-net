@@ -399,14 +399,14 @@ apiActual_chargeCustomerProfileRequest =
             customerProfilePayment_customerProfileId = Just 27388924,
             customerProfilePayment_paymentProfile = Just $ PaymentProfile 25000332 Nothing
             },
-        transactionRequest_lineItems = Just $ LineItems $ LineItem {
+        transactionRequest_lineItems = Just $ LineItems $ ArrayOf $ [ LineItem {
             lineItem_itemId = "1",
             lineItem_name = "vase",
             lineItem_description = Just "Cannes logo",
             lineItem_quantity = "18",
             lineItem_unitPrice = "45.00",
             lineItem_taxable = Nothing
-            }
+            } ]
         }
   in CreateTransaction testMerchantAuthentication (Just "123456") transactionRequest
 
