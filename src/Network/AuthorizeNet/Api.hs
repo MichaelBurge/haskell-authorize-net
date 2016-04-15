@@ -27,8 +27,8 @@ productionApiConfig = ApiConfig {
   apiConfig_hostedProfileUrl = "https://secure.authorize.net/profile/manage"
   }
 
-makeRequest :: ApiConfig -> MerchantAuthentication -> ApiRequest -> IO (Either String ApiResponse)
-makeRequest apiConfig merchantAuthentication request = do
+makeRequest :: ApiConfig -> ApiRequest -> IO (Either String ApiResponse)
+makeRequest apiConfig request = do
   response <- post (apiConfig_baseUrl apiConfig) $ toJSON request
   let mBsl = response ^? responseBody
   case mBsl of
