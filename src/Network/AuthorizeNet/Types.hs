@@ -32,7 +32,8 @@ import Network.AuthorizeNet.TH
 -- | If you had a mock of their API set up somewhere for unit tests, you would use it by creating a value of this type.
 -- | This and 'MerchantAuthentication' are required for every request
 data ApiConfig = ApiConfig {
-  apiConfig_baseUrl :: String
+  apiConfig_baseUrl :: String,
+  apiConfig_hostedProfileUrl :: T.Text
   } deriving (Show)
 
 

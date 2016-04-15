@@ -1,3 +1,5 @@
+{-# LANGUAGE OverloadedStrings #-}
+
 module Network.AuthorizeNet.Api where
 
 import Control.Lens
@@ -14,13 +16,15 @@ import Network.Wreq
 -- | The sandbox endpoint for Authorize.NET
 sandboxApiConfig :: ApiConfig
 sandboxApiConfig = ApiConfig {
-  apiConfig_baseUrl = "https://apitest.authorize.net/xml/v1/request.api"
+  apiConfig_baseUrl          = "https://apitest.authorize.net/xml/v1/request.api",
+  apiConfig_hostedProfileUrl = "https://test.authorize.net/profile/manage"
   }
 
 -- | The production endpoint for Authorize.NET
 productionApiConfig :: ApiConfig
 productionApiConfig = ApiConfig {
-  apiConfig_baseUrl = "https://api.authorize.net/xml/v1/request.api"
+  apiConfig_baseUrl          = "https://api.authorize.net/xml/v1/request.api",
+  apiConfig_hostedProfileUrl = "https://secure.authorize.net/profile/manage"
   }
 
 makeRequest :: ApiConfig -> MerchantAuthentication -> ApiRequest -> IO (Either String ApiResponse)
