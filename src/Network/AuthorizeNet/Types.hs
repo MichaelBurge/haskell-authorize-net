@@ -726,7 +726,14 @@ data TransactionResponse_splitTenderPayment = TransactionResponse_splitTenderPay
   } | D3_DummyForAeson deriving (Eq, Show)
 
 $(deriveJSON choiceType ''TransactionResponse_splitTenderPayment)
-                                             
+
+-- anet:ArrayOfSetting
+data ArrayOfSetting = ArrayOfSetting {
+  arrayOfSetting_setting :: ArrayOf Setting
+  } deriving (Eq, Show)
+
+$(deriveJSON dropRecordName ''ArrayOfSetting)
+                             
 -- data ApiError = ErrorResponseDecoding T.Text
 --               deriving (Show)
 

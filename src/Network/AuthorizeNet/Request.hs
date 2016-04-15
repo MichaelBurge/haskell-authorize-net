@@ -61,6 +61,11 @@ data ApiRequest = AuthenticateTest {
   createCustomerProfileFromTransaction_transId                :: TransactionId,
   createCustomerProfileFromTransaction_customer               :: Maybe CustomerProfileBase,
   createCustomerProfileFromTransaction_customerProfileId      :: Maybe CustomerProfileId
+  } | GetHostedProfilePage {
+  getHostedProfilePage_merchantAuthentication :: MerchantAuthentication,
+  getHostedProfilePage_refId                  :: Maybe T.Text,
+  getHostedProfilePage_customerProfileId      :: CustomerProfileId,
+  getHostedProfilePage_hostedProfileSettings  :: Maybe ArrayOfSetting
   } | CreateTransaction {
   createTransaction_merchantAuthentication :: MerchantAuthentication,
   createTransaction_refId                  :: Maybe T.Text,

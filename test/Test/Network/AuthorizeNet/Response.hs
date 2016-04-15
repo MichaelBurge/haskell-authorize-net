@@ -437,6 +437,25 @@ test_chargeCustomerProfile =
       response = CreateTransactionResponse (Just "123456") testMessages Nothing transactionResponse Nothing
   in assertEncodes text response
 
+test_getHostedProfilePageResponse :: Assertion
+test_getHostedProfilePageResponse =
+  let text = [r|
+{
+    "token": "e3X1JmlCM01EV4HVLqJhdbfStNUmKMkeQ/bm+jBGrFwpeLnaX3E6wmquJZtLXEyMHlcjhNPx471VoGzyrYF1/VIDKk/qcDKT9BShN64Noft0toiYq07nn1CD+w4AzK2kwpSJkjS3I92h9YompnDXSkPKJWopwUesi6n/trJ96CP/m4rf4Xv6vVQqS0DEu+e+foNGkobJwjop2qHPYOp6e+oNGNIYcGYc06VkwE3kQ+ZbBpBhlkKRYdjJdBYRwdSRtcE7YPia2ENTFGNuMYZvFv7rBaoBftWMvapK7Leb1QcE1uQ+t/9X0wlamazbJmubdiE4Gg5GSiFFeVMcMEhUGJyloDCkTzY/Yv1tg0kAK7GfLXLcD+1pwu+YAR4MasCwnFMduwOc3sFOEWmhnU/cvQ==",
+    "messages": {
+        "resultCode": "Ok",
+        "message": [
+            {
+                "code": "I00001",
+                "text": "Successful."
+            }
+        ]
+    }
+}
+|]
+      response = GetHostedProfilePageResponse Nothing testMessages Nothing "e3X1JmlCM01EV4HVLqJhdbfStNUmKMkeQ/bm+jBGrFwpeLnaX3E6wmquJZtLXEyMHlcjhNPx471VoGzyrYF1/VIDKk/qcDKT9BShN64Noft0toiYq07nn1CD+w4AzK2kwpSJkjS3I92h9YompnDXSkPKJWopwUesi6n/trJ96CP/m4rf4Xv6vVQqS0DEu+e+foNGkobJwjop2qHPYOp6e+oNGNIYcGYc06VkwE3kQ+ZbBpBhlkKRYdjJdBYRwdSRtcE7YPia2ENTFGNuMYZvFv7rBaoBftWMvapK7Leb1QcE1uQ+t/9X0wlamazbJmubdiE4Gg5GSiFFeVMcMEhUGJyloDCkTzY/Yv1tg0kAK7GfLXLcD+1pwu+YAR4MasCwnFMduwOc3sFOEWmhnU/cvQ=="
+  in assertEncodes text response
+
 responseTests :: TestTree
 responseTests = testGroup "API Responses Encode and Decode to JSON correctly" [
       testCase "authenticateTestResponse" $ assertEncodes apiExpected_authenticateTestResponse apiActual_authenticateTestResponse,
@@ -452,5 +471,6 @@ responseTests = testGroup "API Responses Encode and Decode to JSON correctly" [
       testCase "updateCustomerPaymentProfileResponse" test_updateCustomerPaymentProfileResponse,
       testCase "deleteCustomerPaymentProfileResponse" test_deleteCustomerPaymentProfileResponse,
       testCase "createCustomerProfileFromTransactionResponse" test_createCustomerProfileFromTransactionResponse,
+      testCase "getHostedProfilePageResponse" test_getHostedProfilePageResponse,
       testCase "chargeCustomerProfile" test_chargeCustomerProfile
      ]

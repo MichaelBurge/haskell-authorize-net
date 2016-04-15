@@ -42,17 +42,19 @@ testCustomerProfile = CustomerProfile {
   customer_shipTos            = Nothing
   }
 
-assertEncodes :: (FromJSON a, ToJSON a) => String -> a -> Assertion
+assertEncodes :: (FromJSON a, ToJSON a, Eq a, Show a) => String -> a -> Assertion
 assertEncodes expectedS actual = do
   let expectedBsRaw = TL.encodeUtf8 $ TL.pack $ expectedS
       eExpected = (`asTypeOf` actual) <$> eitherDecode expectedBsRaw
-      eExpectedBs = encode <$> eExpected :: Either String BSL.ByteString
       actualBs = encode actual
-  case eExpectedBs of
+  case eExpected of
     Left e -> error $ "Error parsing '" <> expectedS <> "': " <> show e
-    Right expectedBs -> assertEqual "" expectedBs actualBs
+    Right expected -> do
+      let expectedBs = encode expected :: BSL.ByteString
+      assertEqual "Encoding" expectedBs actualBs
+      assertEqual "Decoding" expected actual
 
-assertDecodes :: (FromJSON a, ToJSON a) => a -> String -> Assertion
+assertDecodes :: (FromJSON a, ToJSON a, Eq a, Show a) => a -> String -> Assertion
 assertDecodes dummy xS =
   let x = fromJust $ decode $ TL.encodeUtf8 $ TL.pack xS
   in assertEncodes xS $ x `asTypeOf` dummy

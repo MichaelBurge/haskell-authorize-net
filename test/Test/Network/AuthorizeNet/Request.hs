@@ -410,6 +410,41 @@ apiActual_chargeCustomerProfileRequest =
         }
   in CreateTransaction testMerchantAuthentication (Just "123456") transactionRequest
 
+test_getHostedProfilePageRequest =
+  let text = [r|
+{
+    "getHostedProfilePageRequest": {
+        "merchantAuthentication": {
+            "name": "API_LOGIN_ID",
+            "transactionKey": "API_TRANSACTION_KEY"
+        },
+        "customerProfileId": "123456",
+        "hostedProfileSettings": {
+            "setting": [
+                {
+                    "settingName": "hostedProfileReturnUrl",
+                    "settingValue": "https://returnurl.com/return/"
+                },
+                {
+                    "settingName": "hostedProfileReturnUrlText",
+                    "settingValue": "Continue to confirmation page."
+                },
+                {
+                    "settingName": "hostedProfilePageBorderVisible",
+                    "settingValue": "true"
+                }
+            ]
+        }
+    }
+}               
+|]
+      request = GetHostedProfilePage testMerchantAuthentication Nothing 123456 $ Just $ ArrayOfSetting $ ArrayOf [
+        Setting SettingName_hostedProfileReturnUrl "https://returnurl.com/return/",
+        Setting SettingName_hostedProfileReturnUrlText "Continue to confirmation page.",
+        Setting SettingName_hostedProfilePageBorderVisible "true"
+        ]
+  in assertEncodes text request
+
 requestTests :: TestTree
 requestTests = testGroup "API Requests Encode and Decode to JSON correctly" [
   testCase "authenticateTestRequest" $ assertEncodes apiExpected_authenticateTestRequest apiActual_authenticateTestRequest,
@@ -424,5 +459,6 @@ requestTests = testGroup "API Requests Encode and Decode to JSON correctly" [
   testCase "updateCustomerPaymentProfile" $ assertEncodes apiExpected_updateCustomerPaymentProfileRequest apiActual_updateCustomerPaymentProfileRequest,
   testCase "deleteCustomerPaymentProfile" $ assertEncodes apiExpected_deleteCustomerPaymentProfileRequest apiActual_deleteCustomerPaymentProfileRequest,
   testCase "createCustomerProfileFromTransaction" $ assertEncodes apiExpected_createCustomerProfileFromTransactionRequest apiActual_createCustomerProfileFromTransactionRequest,
+  testCase "getHostedProfilePageRequest" test_getHostedProfilePageRequest,
   testCase "chargeCustomerProfile" $ assertEncodes apiExpected_chargeCustomerProfileRequest apiActual_chargeCustomerProfileRequest
   ]

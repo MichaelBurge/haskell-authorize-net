@@ -135,6 +135,16 @@ data DeleteCustomerPaymentProfileResponse = DeleteCustomerPaymentProfileResponse
 
 $(deriveJSON dropRecordName ''DeleteCustomerPaymentProfileResponse)
 
+data GetHostedProfilePageResponse = GetHostedProfilePageResponse {
+  getHostedProfilePageResponse_refId        :: Maybe T.Text,
+  getHostedProfilePageResponse_messages     :: Messages,
+  getHostedProfilePageResponse_sessionToken :: Maybe T.Text,
+
+  getHostedProfilePageResponse_token        :: T.Text
+  } deriving (Eq, Show)
+
+$(deriveJSON dropRecordName ''GetHostedProfilePageResponse)
+
 data CreateProfileResponse = CreateProfileResponse {
   createProfileResponse_messages                      :: Messages,
   createProfileResponse_customerProfileId             :: Maybe CustomerProfileId,
@@ -172,7 +182,7 @@ data TransactionResponse = TransactionResponse {
 $(deriveJSON dropRecordName ''TransactionResponse)
 
 mkTransactionResponse :: TransactionResponse
-mkTransactionResponse = TransactionResponse Nothing Nothing Nothing Nothing Nothing Nothing  Nothing Nothing  Nothing Nothing  Nothing Nothing  Nothing Nothing  Nothing Nothing  Nothing Nothing  Nothing Nothing Nothing Nothing 
+mkTransactionResponse = TransactionResponse Nothing Nothing Nothing Nothing Nothing Nothing Nothing Nothing  Nothing Nothing  Nothing Nothing  Nothing Nothing  Nothing Nothing  Nothing Nothing  Nothing Nothing Nothing Nothing 
 
 data CreateTransactionResponse = CreateTransactionResponse {
   createTransactionResponse_refId        :: Maybe T.Text,
@@ -196,6 +206,7 @@ data ApiResponse = R_GetCustomerProfile GetCustomerProfileResponse
                  | R_UpdateCustomerPaymentProfile UpdateCustomerPaymentProfileResponse
                  | R_DeleteCustomerPaymentProfile DeleteCustomerPaymentProfileResponse
                  | R_CreateProfile CreateProfileResponse
+                 | R_GetHostedProfilePage GetHostedProfilePageResponse
                  | R_CreateTransaction CreateTransactionResponse
                  deriving (Eq, Show)
 
@@ -213,4 +224,5 @@ decodeRequestResponse apiRequest bsl = case apiRequest of
   UpdateCustomerPaymentProfile{}   -> R_UpdateCustomerPaymentProfile   <$> eitherDecode' bsl
   DeleteCustomerPaymentProfile{}   -> R_DeleteCustomerPaymentProfile   <$> eitherDecode' bsl
   CreateCustomerProfile{}          -> R_CreateProfile                  <$> eitherDecode' bsl
+  GetHostedProfilePage{}           -> R_GetHostedProfilePage           <$> eitherDecode' bsl
   CreateTransaction{}              -> R_CreateTransaction              <$> eitherDecode' bsl
