@@ -1,4 +1,4 @@
-{-# LANGUAGE TemplateHaskell #-}
+{-# LANGUAGE TemplateHaskell, RecordWildCards #-}
 
 module Network.AuthorizeNet.Response where
 
@@ -14,23 +14,23 @@ import Network.AuthorizeNet.Types
 
 -- | The API responses are documented at http://developer.authorize.net/api/reference/index.html
 data AuthenticateTestResponse = AuthenticateTestResponse {
-  authenticateTest_refId        :: Maybe T.Text,
-  authenticateTest_messages     :: Messages,
-  authenticateTest_sessionToken :: Maybe T.Text
+  authenticateTestResponse_refId        :: Maybe T.Text,
+  authenticateTestResponse_messages     :: Messages,
+  authenticateTestResponse_sessionToken :: Maybe T.Text
   } deriving (Eq, Show)
 
 $(deriveJSON dropRecordName ''AuthenticateTestResponse)
 
 data CreateCustomerProfileResponse = CreateCustomerProfileResponse {
-  createCustomerProfile_refId                         :: Maybe T.Text,
-  createCustomerProfile_messages                      :: Messages,
-  createCustomerProfile_sessionToken                  :: Maybe T.Text,
+  createCustomerProfileResponse_refId                         :: Maybe T.Text,
+  createCustomerProfileResponse_messages                      :: Messages,
+  createCustomerProfileResponse_sessionToken                  :: Maybe T.Text,
   -- | The CustomerProfileId should be present on success. Save this for later.
-  createCustomerProfile_customerProfileId             :: Maybe CustomerProfileId,
-  createCustomerProfile_customerPaymentProfileIdList  :: [CustomerPaymentProfileId],
-  createCustomerProfile_customerShippingAddressIdList :: [CustomerShippingAddressId],
-  -- | These aren't interpreted by the type system at all. I'm not really sure what they are, honestly.
-  createCustomerProfile_validationDirectResponseList  :: [T.Text]
+  createCustomerProfileResponse_customerProfileId             :: Maybe CustomerProfileId,
+  createCustomerProfileResponse_customerPaymentProfileIdList  :: [CustomerPaymentProfileId],
+  createCustomerProfileResponse_customerShippingAddressIdList :: [CustomerShippingAddressId],
+  -- | I believe these are returned by the bank when Authorize.NET attempts to validate the information
+  createCustomerProfileResponse_validationDirectResponseList  :: [T.Text]
   } deriving (Eq, Show)
                    
 $(deriveJSON dropRecordName ''CreateCustomerProfileResponse)
@@ -146,7 +146,9 @@ data GetHostedProfilePageResponse = GetHostedProfilePageResponse {
 $(deriveJSON dropRecordName ''GetHostedProfilePageResponse)
 
 data CreateProfileResponse = CreateProfileResponse {
+  createProfileResponse_refId                         :: Maybe T.Text,
   createProfileResponse_messages                      :: Messages,
+  createProfileResponse_sessionToken                  :: Maybe T.Text,
   createProfileResponse_customerProfileId             :: Maybe CustomerProfileId,
   createProfileResponse_customerPaymentProfileIdList  :: Maybe (ArrayOf CustomerPaymentProfileId),
   createProfileResponse_customerShippingAddressIdList :: Maybe (ArrayOf CustomerShippingAddressId)
@@ -195,7 +197,9 @@ data CreateTransactionResponse = CreateTransactionResponse {
 
 $(deriveJSON dropRecordName ''CreateTransactionResponse)
 
-data ApiResponse = R_GetCustomerProfile GetCustomerProfileResponse
+data ApiResponse = R_AuthenticateTest AuthenticateTestResponse
+                 | R_CreateCustomerProfile CreateCustomerProfileResponse
+                 | R_GetCustomerProfile GetCustomerProfileResponse
                  | R_GetCustomerProfileIds GetCustomerProfileIdsResponse
                  | R_UpdateCustomerProfile UpdateCustomerProfileResponse
                  | R_DeleteCustomerProfile DeleteCustomerProfileResponse
@@ -213,6 +217,8 @@ data ApiResponse = R_GetCustomerProfile GetCustomerProfileResponse
 -- | Decodes a bytestring into the appropriate response given a request
 decodeRequestResponse :: ApiRequest -> BSL.ByteString -> Either String ApiResponse
 decodeRequestResponse apiRequest bsl = case apiRequest of
+  AuthenticateTest{}               -> R_AuthenticateTest               <$> eitherDecode' bsl
+  CreateCustomerProfile{}          -> R_CreateCustomerProfile          <$> eitherDecode' bsl
   GetCustomerProfile{}             -> R_GetCustomerProfile             <$> eitherDecode' bsl
   GetCustomerProfileIds{}          -> R_GetCustomerProfileIds          <$> eitherDecode' bsl
   UpdateCustomerProfile{}          -> R_UpdateCustomerProfile          <$> eitherDecode' bsl
@@ -226,3 +232,28 @@ decodeRequestResponse apiRequest bsl = case apiRequest of
   CreateCustomerProfile{}          -> R_CreateProfile                  <$> eitherDecode' bsl
   GetHostedProfilePage{}           -> R_GetHostedProfilePage           <$> eitherDecode' bsl
   CreateTransaction{}              -> R_CreateTransaction              <$> eitherDecode' bsl
+
+-- | anet:ANetApiResponse
+data ANetApiResponse = ANetApiResponse {
+  aNetApiResponse_refId        :: Maybe T.Text,
+  aNetApiResponse_messages     :: Messages,
+  aNetApiResponse_sessionToken :: Maybe T.Text
+  } deriving (Eq, Show)
+
+-- | All Response records should be 'extensions' of the ANetApiResponse type, but Haskell's type system doesn't support that so we duplicate the fields on each type. This maps the duplicated fields back onto an instance of the extended type for easier use.
+response_aNetApiResponse :: ApiResponse -> ANetApiResponse
+response_aNetApiResponse (R_AuthenticateTest AuthenticateTestResponse{..}) = ANetApiResponse authenticateTestResponse_refId authenticateTestResponse_messages authenticateTestResponse_sessionToken
+response_aNetApiResponse (R_CreateCustomerProfile CreateCustomerProfileResponse{..}) = ANetApiResponse createCustomerProfileResponse_refId createCustomerProfileResponse_messages createCustomerProfileResponse_sessionToken
+response_aNetApiResponse (R_GetCustomerProfile GetCustomerProfileResponse{..}) = ANetApiResponse getCustomerProfileResponse_refId getCustomerProfileResponse_messages getCustomerProfileResponse_sessionToken
+response_aNetApiResponse (R_GetCustomerProfileIds GetCustomerProfileIdsResponse{..}) = ANetApiResponse getCustomerProfileIdsResponse_refId getCustomerProfileIdsResponse_messages getCustomerProfileIdsResponse_sessionToken
+response_aNetApiResponse (R_UpdateCustomerProfile UpdateCustomerProfileResponse{..}) = ANetApiResponse updateCustomerProfileResponse_refId updateCustomerProfileResponse_messages updateCustomerProfileResponse_sessionToken
+response_aNetApiResponse (R_DeleteCustomerProfile DeleteCustomerProfileResponse{..}) = ANetApiResponse deleteCustomerProfileResponse_refId deleteCustomerProfileResponse_messages deleteCustomerProfileResponse_sessionToken
+response_aNetApiResponse (R_CreateCustomerPaymentProfile CreateCustomerPaymentProfileResponse{..}) = ANetApiResponse createCustomerPaymentProfileResponse_refId createCustomerPaymentProfileResponse_messages createCustomerPaymentProfileResponse_sessionToken
+response_aNetApiResponse (R_GetCustomerPaymentProfile GetCustomerPaymentProfileResponse{..}) = ANetApiResponse getCustomerPaymentProfileResponse_refId getCustomerPaymentProfileResponse_messages getCustomerPaymentProfileResponse_sessionToken
+response_aNetApiResponse (R_GetCustomerPaymentProfileList R_getCustomerPaymentProfileListResponse{..}) = ANetApiResponse getCustomerPaymentProfileListResponse_refId getCustomerPaymentProfileListResponse_messages getCustomerPaymentProfileListResponse_sessionToken
+response_aNetApiResponse (R_ValidateCustomerPaymentProfile ValidateCustomerPaymentProfileResponse{..}) = ANetApiResponse validateCustomerPaymentProfileResponse_refId validateCustomerPaymentProfileResponse_messages validateCustomerPaymentProfileResponse_sessionToken
+response_aNetApiResponse (R_UpdateCustomerPaymentProfile UpdateCustomerPaymentProfileResponse{..}) = ANetApiResponse updateCustomerPaymentProfileResponse_refId updateCustomerPaymentProfileResponse_messages updateCustomerPaymentProfileResponse_sessionToken
+response_aNetApiResponse (R_DeleteCustomerPaymentProfile DeleteCustomerPaymentProfileResponse{..}) = ANetApiResponse deleteCustomerPaymentProfileResponse_refId deleteCustomerPaymentProfileResponse_messages deleteCustomerPaymentProfileResponse_sessionToken
+response_aNetApiResponse (R_CreateProfile CreateProfileResponse{..}) = ANetApiResponse Nothing createProfileResponse_messages Nothing
+response_aNetApiResponse (R_GetHostedProfilePage GetHostedProfilePageResponse{..}) = ANetApiResponse getHostedProfilePageResponse_refId getHostedProfilePageResponse_messages getHostedProfilePageResponse_sessionToken
+response_aNetApiResponse (R_CreateTransaction CreateTransactionResponse{..}) = ANetApiResponse createTransactionResponse_refId createTransactionResponse_messages createTransactionResponse_sessionToken

@@ -64,13 +64,13 @@ apiExpected_createCustomerProfileResponse = [r|
 
 apiActual_createCustomerProfileResponse :: CreateCustomerProfileResponse
 apiActual_createCustomerProfileResponse = CreateCustomerProfileResponse {
-  createCustomerProfile_refId = Nothing,                         
-  createCustomerProfile_messages = testMessages,              
-  createCustomerProfile_sessionToken = Nothing,      
-  createCustomerProfile_customerProfileId = Just 190178,             
-  createCustomerProfile_customerPaymentProfileIdList = [157497], 
-  createCustomerProfile_customerShippingAddressIdList = [],
-  createCustomerProfile_validationDirectResponseList = [ "1,1,1,(TESTMODE) This transaction has been approved.,000000,P,0,none,Test transaction for ValidateCustomerPaymentProfile.,1.00,CC,auth_only,Merchant_Customer_ID,,,,,,,,,,,customer-profile-email@her.com,,,,,,,,,0.00,0.00,0.00,FALSE,none,207BCBBF78E85CF174C87AE286B472D2,,,,,,,,,,,,,XXXX1111,Visa,,,,,,,,,,,,,,,," ]
+  createCustomerProfileResponse_refId = Nothing,                         
+  createCustomerProfileResponse_messages = testMessages,              
+  createCustomerProfileResponse_sessionToken = Nothing,      
+  createCustomerProfileResponse_customerProfileId = Just 190178,             
+  createCustomerProfileResponse_customerPaymentProfileIdList = [157497], 
+  createCustomerProfileResponse_customerShippingAddressIdList = [],
+  createCustomerProfileResponse_validationDirectResponseList = [ "1,1,1,(TESTMODE) This transaction has been approved.,000000,P,0,none,Test transaction for ValidateCustomerPaymentProfile.,1.00,CC,auth_only,Merchant_Customer_ID,,,,,,,,,,,customer-profile-email@her.com,,,,,,,,,0.00,0.00,0.00,FALSE,none,207BCBBF78E85CF174C87AE286B472D2,,,,,,,,,,,,,XXXX1111,Visa,,,,,,,,,,,,,,,," ]
   }
 
 
