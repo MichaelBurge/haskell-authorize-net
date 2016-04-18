@@ -31,9 +31,8 @@ productionApiConfig = ApiConfig {
   }
 
 stripBom :: BSL.ByteString -> BSL.ByteString
-stripBom bsl = case BSL.splitAt 1 bsl of
-  (bom, xs) | bom == BSL.pack [ 0xFF ] -> xs
---(bom, xs) | bom == BSL.pack [ 0xEF, 0xBB, 0xBF] -> xs
+stripBom bsl = case BSL.splitAt 3 bsl of
+  (bom, xs) | bom == BSL.pack [ 0xEF, 0xBB, 0xBF] -> xs
   _ -> bsl
 
 -- | Makes an Authorize.NET request, hopefully returning an ApiResponse. If an error occurs, returns the raw response body and the Aeson parse error.
