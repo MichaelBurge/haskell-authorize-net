@@ -140,7 +140,7 @@ data GetHostedProfilePageResponse = GetHostedProfilePageResponse {
   getHostedProfilePageResponse_messages     :: Messages,
   getHostedProfilePageResponse_sessionToken :: Maybe T.Text,
 
-  getHostedProfilePageResponse_token        :: T.Text
+  getHostedProfilePageResponse_token        :: Maybe T.Text
   } deriving (Eq, Show)
 
 $(deriveJSON dropRecordName ''GetHostedProfilePageResponse)
