@@ -41,6 +41,7 @@ test-suite authorize-net-test
                      , Test.Network.AuthorizeNet.Util
   build-depends:       base
                      , aeson
+                     , attoparsec
                      , bytestring
                      , authorize-net
                      , tasty
