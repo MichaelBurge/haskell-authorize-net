@@ -35,19 +35,25 @@ stripBom bsl = case BSL.splitAt 3 bsl of
   (bom, xs) | bom == BSL.pack [ 0xEF, 0xBB, 0xBF] -> xs
   _ -> bsl
 
+data ApiError = ApiError {
+  apiError_responseBody :: BSL.ByteString,
+  apiError_errorMessage :: String,
+  apiError_messages     :: Maybe Messages
+  } deriving (Eq, Show)
+
 -- | Makes an Authorize.NET request, hopefully returning an ApiResponse. If an error occurs, returns the raw response body and the Aeson parse error.
-makeRequest :: ApiConfig -> ApiRequest -> IO (Either (BSL.ByteString, String, Maybe Messages) ApiResponse)
+makeRequest :: ApiConfig -> ApiRequest -> IO (Either ApiError ApiResponse)
 makeRequest apiConfig request = do
   response <- post (apiConfig_baseUrl apiConfig) $ toJSON request
   let mBsl = response ^? responseBody
   case mBsl of
-    Nothing -> return $ Left (BSL.empty, "No response in body", Nothing)
+    Nothing -> return $ Left $ ApiError BSL.empty "No response in body" Nothing
     Just bsl ->
       let strippedBsl = stripBom bsl
       in case decodeRequestResponse request strippedBsl of
-        Left e -> return $ Left (strippedBsl, e, Nothing)
+        Left e -> return $ Left $ ApiError strippedBsl e Nothing
         Right response ->
           let messages = aNetApiResponse_messages $ response_aNetApiResponse response
           in case messages_resultCode messages of
             Message_Ok -> return $ Right response
-            Message_Error -> return $ Left (bsl, "API call returned an error", Just messages)
+            Message_Error -> return $ Left $ ApiError bsl "API call returned an error" $ Just messages

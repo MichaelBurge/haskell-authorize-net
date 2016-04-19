@@ -1,8 +1,10 @@
-{-# LANGUAGE TemplateHaskell #-}
+{-# LANGUAGE TemplateHaskell, DeriveGeneric #-}
 
 module Network.AuthorizeNet.Request where
 
+import Data.Aeson
 import Data.Aeson.TH
+import GHC.Generics
 
 import qualified Data.Text as T
 
@@ -71,6 +73,10 @@ data ApiRequest = AuthenticateTest {
   createTransaction_refId                  :: Maybe T.Text,
   createTransaction_transactionRequest     :: TransactionRequest
   }
-  deriving (Eq, Show)
+  deriving (Eq, Generic, Show)
 
-$(deriveJSON requestOptions ''ApiRequest)
+instance ToJSON ApiRequest where
+  toEncoding = genericToEncoding requestOptions
+
+instance FromJSON ApiRequest where
+  parseJSON = genericParseJSON requestOptions
