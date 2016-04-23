@@ -3,12 +3,16 @@
 module Test.Network.AuthorizeNet.Util where
 
 import Data.Aeson
+import Data.Attoparsec.ByteString
 import Data.Maybe
 import Data.Monoid
 import Data.Proxy
 import Test.Tasty.HUnit
+import System.IO
 
 import qualified Data.ByteString.Lazy as BSL
+import qualified Data.Text as T
+import qualified Data.Text.Encoding as T
 import qualified Data.Text.Lazy as TL
 import qualified Data.Text.Lazy.Encoding as TL
 
@@ -44,13 +48,17 @@ testCustomerProfile = CustomerProfile {
 
 assertEncodes :: (FromJSON a, ToJSON a, Eq a, Show a) => String -> a -> Assertion
 assertEncodes expectedS actual = do
-  let expectedBsRaw = TL.encodeUtf8 $ TL.pack $ expectedS
-      eExpected = (`asTypeOf` actual) <$> eitherDecode expectedBsRaw
+  let -- Strip characters like newlines and spaces that don't matter
+      expectedSStripped = filter (not . flip elem ("\n " :: String)) expectedS :: String
+      expectedBs = TL.encodeUtf8 $ TL.pack $ expectedSStripped
+      eExpected = (`asTypeOf` actual) <$> eitherDecode expectedBs
       actualBs = encode actual
+
   case eExpected of
     Left e -> error $ "Error parsing '" <> expectedS <> "': " <> show e
     Right expected -> do
-      let expectedBs = encode expected :: BSL.ByteString
+      let actualJson = toJSON actual
+      hPutStrLn stderr $ show actualBs
       assertEqual "Encoding" expectedBs actualBs
       assertEqual "Decoding" expected actual
 

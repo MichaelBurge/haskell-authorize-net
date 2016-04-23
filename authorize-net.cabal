@@ -24,6 +24,7 @@ library
                      , wreq
                      , aeson
                      , lens
+                     , stringsearch
                      , transformers
                      , text
                      , either
