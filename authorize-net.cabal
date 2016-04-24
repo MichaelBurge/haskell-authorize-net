@@ -30,6 +30,8 @@ library
                      , either
                      , mtl
                      , bytestring
+                     , template-haskell
+                     , HaXml
   default-language:    Haskell2010
 
 test-suite authorize-net-test
