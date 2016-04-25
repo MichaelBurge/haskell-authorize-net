@@ -17,7 +17,7 @@ data AuthenticateTestResponse = AuthenticateTestResponse {
   authenticateTestResponse_sessionToken :: Maybe T.Text
   } deriving (Eq, Show)
 
-$(deriveXml dropRecordName ''AuthenticateTestResponse)
+$(deriveXml ''AuthenticateTestResponse)
 
 -- $(deriveJSON dropRecordName ''AuthenticateTestResponse)
 

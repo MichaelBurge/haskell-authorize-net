@@ -14,12 +14,16 @@ data AuthenticateTestRequest = AuthenticateTestRequest {
   authenticateTest_merchantAuthentication :: MerchantAuthentication
   } deriving (Eq, Show)
 
-$(deriveXml dropRecordName ''AuthenticateTestRequest)
+$(deriveXml ''AuthenticateTestRequest)
 
-                  -- | CreateCustomerProfile {
-  -- createCustomerProfile_merchantAuthentication :: MerchantAuthentication,
-  -- createCustomerProfile_profile                :: CustomerProfile
-  -- } | GetCustomerProfile {
+data CreateCustomerProfileRequest = CreateCustomerProfileRequest {
+  createCustomerProfile_merchantAuthentication :: MerchantAuthentication,
+  createCustomerProfile_profile                :: CustomerProfile,
+  createCustomerProfile_validationMode         :: ValidationMode
+  } deriving (Eq, Show)
+
+$(deriveXml ''CreateCustomerProfileRequest)                                    
+--                  | GetCustomerProfile {
   -- getCustomerProfile_merchantAuthentication :: MerchantAuthentication,
   -- getCustomerProfile_customerProfileId      :: CustomerProfileId
   -- } | GetCustomerProfileIds {

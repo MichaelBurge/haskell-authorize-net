@@ -35,7 +35,8 @@ runSchemaTypeToXml x =
   let name = xmlParsableName x
       cons = children $ head $ schemaTypeToXML name x
       nsAttr = AttValue [Left "AnetApi/xml/v1/schema/AnetApiSchema.xsd"]
-      doc = document $ Document (Prolog Nothing [] Nothing []) [] (Elem (N name) [(N "xmlns", nsAttr)] cons ) []
+      xmlDecl = XMLDecl "1.0" (Just $ EncodingDecl "utf-8") Nothing
+      doc = document $ Document (Prolog (Just xmlDecl) [] Nothing []) [] (Elem (N name) [(N "xmlns", nsAttr)] cons ) []
   in TL.encodeUtf8 $ TL.pack $ render doc
 
 fromXml :: forall a. XmlParsable a => BSL.ByteString -> Either String a

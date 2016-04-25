@@ -21,6 +21,7 @@ import Test.Network.AuthorizeNet.Util
 test_authenticateTestRequest :: Assertion
 test_authenticateTestRequest =
   let expected = [r|
+<?xml version="1.0" encoding="utf-8"?>                   
 <authenticateTestRequest xmlns="AnetApi/xml/v1/schema/AnetApiSchema.xsd">
   <merchantAuthentication>
         <name>API_LOGIN_ID</name>
@@ -31,35 +32,37 @@ test_authenticateTestRequest =
       actual = AuthenticateTestRequest testMerchantAuthentication
   in assertEncodes expected actual
 
--- apiExpected_createCustomerProfileRequest :: String
--- apiExpected_createCustomerProfileRequest = [r|
--- {
---     "createCustomerProfileRequest": {
---         "merchantAuthentication": {
---             "name": "API_LOGIN_ID",
---             "transactionKey": "API_TRANSACTION_KEY"
---         },
---         "profile": {
---             "merchantCustomerId": "Merchant_Customer_ID",
---             "description": "Profile description here",
---             "email": "customer-profile-email@here.com",
---             "paymentProfiles": {
---                 "customerType": "individual",
---                 "payment": {
---                     "creditCard": {
---                         "cardNumber": "4111111111111111",
---                         "expirationDate": "2020-12"
---                     }
---                 }
---             }
---         },
---         "validationMode": "testMode"
---     }
--- }
--- |]
+test_createCustomerProfileRequest :: Assertion
+test_createCustomerProfileRequest =
+  let expected = [r|
+<?xml version="1.0" encoding="utf-8"?>
+<createCustomerProfileRequest xmlns="AnetApi/xml/v1/schema/AnetApiSchema.xsd">  
+   <merchantAuthentication>
+     <name>API_LOGIN_ID</name>
+     <transactionKey>API_TRANSACTION_KEY</transactionKey>
+    </merchantAuthentication>
+   <profile>
+     <merchantCustomerId>Merchant_Customer_ID</merchantCustomerId>
+     <description>Profile description here</description>
+     <email>customer-profile-email@here.com</email>
+     <paymentProfiles>
+       <customerType>individual</customerType>
+          <payment>
+             <creditCard>
+                <cardNumber>4111111111111111</cardNumber>
+                <expirationDate>2020-12</expirationDate>
+              </creditCard>
+           </payment>
+      </paymentProfiles>
+    </profile>
+    <validationMode>testMode</validationMode>
+  </createCustomerProfileRequest>
+|]
+      actual = CreateCustomerProfileRequest testMerchantAuthentication testCustomerProfile Validation_testMode
+  in assertEncodes expected actual
 
 -- apiActual_createCustomerProfileRequest :: ApiRequest
--- apiActual_createCustomerProfileRequest = CreateCustomerProfile testMerchantAuthentication testCustomerProfile
+-- apiActual_createCustomerProfileRequest = 
 
 -- apiExpected_getCustomerProfileRequest :: String
 -- apiExpected_getCustomerProfileRequest = [r|
@@ -444,8 +447,8 @@ test_authenticateTestRequest =
 
 requestTests :: TestTree
 requestTests = testGroup "API Requests Encode and Decode to JSON correctly" [
-  testCase "authenticateTestRequest" test_authenticateTestRequest
-  -- testCase "createCustomerProfileRequest" $ assertEncodes apiExpected_createCustomerProfileRequest apiActual_createCustomerProfileRequest,
+  testCase "authenticateTestRequest" test_authenticateTestRequest,
+  testCase "createCustomerProfileRequest" test_createCustomerProfileRequest
   -- testCase "getCustomerProfileRequest" $ assertEncodes apiExpected_getCustomerProfileRequest apiActual_getCustomerProfileRequest,
   -- testCase "getCustomerProfileIdsRequest" $ assertEncodes apiExpected_getCustomerProfileIdsRequest apiActual_getCustomerProfileIdsRequest,
   -- testCase "updateCustomerProfileRequest" $ assertEncodes apiExpected_updateCustomerProfileRequest apiActual_updateCustomerProfileRequest,

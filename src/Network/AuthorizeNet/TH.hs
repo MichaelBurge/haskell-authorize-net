@@ -12,7 +12,7 @@ import Language.Haskell.TH
 import Language.Haskell.TH.Syntax
 import Network.AuthorizeNet.Instances
 
-import Text.XML.HaXml hiding (Name, element, literal)
+import Text.XML.HaXml hiding (Name, element, literal, x)
 import Text.XML.HaXml.Schema.Schema
 
 import System.IO
@@ -90,14 +90,16 @@ type ConName = String
 -- | Fills out Restricts, SchemaType, and SimpleType for a simple NewType wrapper
 deriveXmlNewtype :: Options -> Name -> DecsQ
 deriveXmlNewtype opts name = do
-  wrappedTypeName <- conName <$> getWrappedTypeCon name
+  wrappedConName <- conName <$> getWrappedTypeCon name
+  wrappedTypeName <- getWrappedTypeName name
   let outerType = return $ ConT name
       innerType = return $ ConT wrappedTypeName
-      outerPattern = return $ ConP name [VarP $ mkName "x"]
-      outerCon = return $ ConE name
+      vX = varE $ mkName "x"
+      outerPattern = return $ ConP wrappedConName [VarP $ mkName "x"]
+      outerCon = return $ ConE wrappedConName
       restrictsDec = [d|
         instance Restricts $(outerType) $(innerType) where
-          restricts $(outerPattern) = x
+          restricts $(outerPattern) = $(vX)
         |]
       schemaTypeDec = [d|
         instance SchemaType $(outerType) where
@@ -105,13 +107,13 @@ deriveXmlNewtype opts name = do
             e <- element [s]
             commit $ interior e $ parseSimpleType
           schemaTypeToXML s $(outerPattern) =
-            toXMLElement s [] [toXMLText (simpleTypeText x)]
+            toXMLElement s [] [toXMLText (simpleTypeText $(vX))]
         |]
 
       simpleTypeDec = [d|
         instance SimpleType $(outerType) where
           acceptingParser = fmap $(outerCon) acceptingParser
-          simpleTypeText $(outerPattern) = simpleTypeText x
+          simpleTypeText $(outerPattern) = simpleTypeText $(vX)
         |]
   
   concat <$> sequence [restrictsDec, schemaTypeDec, simpleTypeDec]
@@ -156,9 +158,30 @@ deriveXmlEnum opts name = withType name $ \name tvbs cons -> do
         |]
   (++) <$> schemaTypeInstanceDec <*> (pure <$> simpleTypeInstanceDec)
 
+deriveXmlChoice :: Options -> Name -> DecsQ
+deriveXmlChoice opts name = withType name $ \name tvbs cons -> do
+  let xmlName con = litE $ stringL $ constructorTagModifier opts $ showName $ conName con
+  let caseTuple con =
+        let xmlN = xmlName con
+            parser = appsE [dyn "fmap", conE $ conName con, appE (dyn "parseSchemaType") xmlN]
+        in tupE [ xmlN, parser ]
+      cases = listE $ map caseTuple cons
+      splitX = caseE (dyn "x") $ flip map cons $ \con ->
+        let xmlN = xmlName con
+        in match (conP (conName con) [varP $ mkName "y"]) (normalB $ appsE [dyn "schemaTypeToXML", xmlN, dyn "y"])  []
+      parseSchemaTypeDec = [d|
+                            instance SchemaType $(return $ ConT name) where
+                              parseSchemaType s = do
+                                (pos,e) <- posnElement [s]
+                                commit $ interior e $ oneOf' $(cases)
+                              schemaTypeToXML s x = toXMLElement s [] [$(splitX)]
+                            |]
+  parseSchemaTypeDec
+  
+
 deriveXmlObject :: Options -> Name -> DecsQ
 deriveXmlObject opts name = withType name $ \name tvbs cons -> do
-  let ns = "Network.AuthorizeNet.TH.deriveXmlSchemaType: Type - " ++ showName name ++ ": "
+  let ns = "Network.AuthorizeNet.TH.deriveXmlObject: Type - " ++ showName name ++ ": "
   let context = []
       ty = AppT (ConT ''SchemaType) (ConT name)
       con = case cons of
@@ -233,6 +256,16 @@ getWrappedTypeCon name = do
         NewtypeD _ _ _ con _ -> return con
         _ -> error $ ns ++ "Unexpected declaration"
 
+getWrappedTypeName :: Name -> Q Name
+getWrappedTypeName name = do
+  let ns = "Network.AuthorizeNet.TH.getWrappedTypeName: Name was " ++ showName name ++ ": "
+  con <- getWrappedTypeCon name
+  case con of
+    NormalC _ [(_, ty)] -> case ty of
+      ConT x -> return x
+      _ -> error $ ns ++ "Unexpected type"
+    _ -> error $ ns ++ "Unexpected constructor"
+
 deriveXmlParsable :: Options -> Name -> Q [Dec]
 deriveXmlParsable opts name =
   [d|
@@ -241,17 +274,20 @@ deriveXmlParsable opts name =
   |]
 
 -- | The main intended entry point
-deriveXml :: Options -> Name -> Q [Dec]
-deriveXml opts name = do
+deriveXml :: Name -> DecsQ
+deriveXml = deriveXmlWithOptions defaultOptions
+
+deriveXmlWithOptions :: Options -> Name -> DecsQ
+deriveXmlWithOptions opts name = do
   let ns = "Network.AuthorizeNet.TH.deriveXml: Name was '" ++ showName name ++ "':"
   info <- reify name
   decs <- case info of
     TyConI dec ->
       case dec of
         NewtypeD{} -> deriveXmlNewtype opts name
-        DataD _ _ tvbs cons _ -> if isAllNullary cons && allNullaryToStringTag opts
-                                 then deriveXmlEnum opts name
-                                 else deriveXmlObject opts name
+        DataD _ _ tvbs cons _ | isAllNullary cons && allNullaryToStringTag opts -> deriveXmlEnum opts name
+        DataD _ _ tvbs [con] _ -> deriveXmlObject opts name
+        DataD _ _ tvbs cons  _-> deriveXmlChoice opts name
         _ -> error $ ns ++ "Only newtypes or data constructors can be derived."
   xmlParsableDecs <- deriveXmlParsable opts name
   return $ decs ++ xmlParsableDecs
