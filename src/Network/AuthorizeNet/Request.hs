@@ -22,18 +22,34 @@ data CreateCustomerProfileRequest = CreateCustomerProfileRequest {
   createCustomerProfile_validationMode         :: ValidationMode
   } deriving (Eq, Show)
 
-$(deriveXml ''CreateCustomerProfileRequest)                                    
---                  | GetCustomerProfile {
-  -- getCustomerProfile_merchantAuthentication :: MerchantAuthentication,
-  -- getCustomerProfile_customerProfileId      :: CustomerProfileId
-  -- } | GetCustomerProfileIds {
-  -- getCustomerProfileIds_merchantAuthentication :: MerchantAuthentication
-  -- } | UpdateCustomerProfile {
-  -- updateCustomerProfile_merchantAuthentication :: MerchantAuthentication,
-  -- updateCustomerProfile_profile                :: CustomerProfile
-  -- } | DeleteCustomerProfile {
-  -- deleteCustomerProfile_merchantAuthentication :: MerchantAuthentication,
-  -- deleteCustomerProfile_customerProfileId      :: CustomerProfileId
+$(deriveXml ''CreateCustomerProfileRequest)
+
+data GetCustomerProfileRequest = GetCustomerProfileRequest {
+  getCustomerProfile_merchantAuthentication :: MerchantAuthentication,
+  getCustomerProfile_customerProfileId      :: CustomerProfileId
+  } deriving (Eq, Show)
+
+$(deriveXml ''GetCustomerProfileRequest)
+
+data GetCustomerProfileIdsRequest = GetCustomerProfileIdsRequest {
+  getCustomerProfileIds_merchantAuthentication :: MerchantAuthentication
+  } deriving (Eq, Show)
+
+$(deriveXml ''GetCustomerProfileIdsRequest)
+
+data UpdateCustomerProfileRequest = UpdateCustomerProfileRequest {
+  updateCustomerProfile_merchantAuthentication :: MerchantAuthentication,
+  updateCustomerProfile_profile                :: CustomerProfileEx
+  } deriving (Eq, Show)
+
+$(deriveXml ''UpdateCustomerProfileRequest)
+
+data DeleteCustomerProfileRequest = DeleteCustomerProfileRequest {
+  deleteCustomerProfile_merchantAuthentication :: MerchantAuthentication,
+  deleteCustomerProfile_customerProfileId      :: CustomerProfileId
+  } deriving (Eq, Show)
+
+$(deriveXml ''DeleteCustomerProfileRequest)                                    
   -- } | CreateCustomerPaymentProfile {
   -- createCustomerPaymentProfile_merchantAuthentication :: MerchantAuthentication,
   -- createCustomerPaymentProfile_customerProfileId      :: CustomerProfileId,

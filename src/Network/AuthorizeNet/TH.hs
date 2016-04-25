@@ -163,18 +163,18 @@ deriveXmlChoice opts name = withType name $ \name tvbs cons -> do
   let xmlName con = litE $ stringL $ constructorTagModifier opts $ showName $ conName con
   let caseTuple con =
         let xmlN = xmlName con
-            parser = appsE [dyn "fmap", conE $ conName con, appE (dyn "parseSchemaType") xmlN]
+            parser = [| fmap $(conE $ conName con) (parseSchemaType $(xmlN)) |]
         in tupE [ xmlN, parser ]
       cases = listE $ map caseTuple cons
       splitX = caseE (dyn "x") $ flip map cons $ \con ->
         let xmlN = xmlName con
-        in match (conP (conName con) [varP $ mkName "y"]) (normalB $ appsE [dyn "schemaTypeToXML", xmlN, dyn "y"])  []
+        in match (conP (conName con) [varP $ mkName "y"]) (normalB $ appsE [dyn "toXMLElement", dyn "s", listE [], listE [appsE [dyn "schemaTypeToXML", xmlN, dyn "y"]]]) []
       parseSchemaTypeDec = [d|
                             instance SchemaType $(return $ ConT name) where
                               parseSchemaType s = do
                                 (pos,e) <- posnElement [s]
                                 commit $ interior e $ oneOf' $(cases)
-                              schemaTypeToXML s x = toXMLElement s [] [$(splitX)]
+                              schemaTypeToXML s x = $(splitX)
                             |]
   parseSchemaTypeDec
   

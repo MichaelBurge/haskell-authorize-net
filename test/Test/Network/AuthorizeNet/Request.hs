@@ -61,83 +61,75 @@ test_createCustomerProfileRequest =
       actual = CreateCustomerProfileRequest testMerchantAuthentication testCustomerProfile Validation_testMode
   in assertEncodes expected actual
 
--- apiActual_createCustomerProfileRequest :: ApiRequest
--- apiActual_createCustomerProfileRequest = 
+test_getCustomerProfileRequest :: Assertion
+test_getCustomerProfileRequest =
+  let expected = [r|
+<?xml version="1.0" encoding="utf-8"?>
+<getCustomerProfileRequest xmlns="AnetApi/xml/v1/schema/AnetApiSchema.xsd">
+  <merchantAuthentication>
+    <name>API_LOGIN_ID</name>
+    <transactionKey>API_TRANSACTION_KEY</transactionKey>
+  </merchantAuthentication>
+  <customerProfileId>10000</customerProfileId>
+</getCustomerProfileRequest>
+|]
+      actual = GetCustomerProfileRequest testMerchantAuthentication 10000
+  in assertEncodes expected actual
 
--- apiExpected_getCustomerProfileRequest :: String
--- apiExpected_getCustomerProfileRequest = [r|
--- {
---     "getCustomerProfileRequest": {
---         "merchantAuthentication": {
---             "name": "API_LOGIN_ID",
---             "transactionKey": "API_TRANSACTION_KEY"
---         },
---         "customerProfileId": "10000"
---     }
--- }
--- |]
+test_getCustomerProfileIdsRequest :: Assertion
+test_getCustomerProfileIdsRequest =
+  let expected = [r|
+<?xml version="1.0" encoding="utf-8"?>
+<getCustomerProfileIdsRequest xmlns="AnetApi/xml/v1/schema/AnetApiSchema.xsd">
+  <merchantAuthentication>
+    <name>API_LOGIN_ID</name>
+    <transactionKey>API_TRANSACTION_KEY</transactionKey>
+  </merchantAuthentication>
+</getCustomerProfileIdsRequest>
+|]
+      actual = GetCustomerProfileIdsRequest testMerchantAuthentication
+  in assertEncodes expected actual
 
--- apiActual_getCustomerProfileRequest :: ApiRequest
--- apiActual_getCustomerProfileRequest = GetCustomerProfile testMerchantAuthentication 10000
+test_updateCustomerProfileRequest :: Assertion
+test_updateCustomerProfileRequest =
+  let expected = [r|
+<?xml version="1.0" encoding="utf-8"?>
+<updateCustomerProfileRequest xmlns="AnetApi/xml/v1/schema/AnetApiSchema.xsd">
+  <merchantAuthentication>
+    <name>API_LOGIN_ID</name>
+    <transactionKey>API_TRANSACTION_KEY</transactionKey>
+  </merchantAuthentication>
+  <profile>
+    <merchantCustomerId>custId123</merchantCustomerId>
+    <description>some description</description>
+    <email>newaddress@example.com</email>
+    <customerProfileId>10000</customerProfileId>
+  </profile>
+</updateCustomerProfileRequest>
+|]
+      actual = UpdateCustomerProfileRequest testMerchantAuthentication $ CustomerProfileEx {
+  customerProfileEx_customerProfileId = Just 10000,
+  customerProfileEx_merchantCustomerId = "custId123",
+  customerProfileEx_description = "some description",
+  customerProfileEx_email = "newaddress@example.com"
+  }
+  in assertEncodes expected actual
 
--- apiExpected_getCustomerProfileIdsRequest :: String
--- apiExpected_getCustomerProfileIdsRequest = [r|
--- {
---     "getCustomerProfileIdsRequest": {
---         "merchantAuthentication": {
---             "name": "API_LOGIN_ID",
---             "transactionKey": "API_TRANSACTION_KEY"
---         }
---     }
--- }
--- |]
+test_deleteCustomerProfileRequest :: Assertion
+test_deleteCustomerProfileRequest =
+  let expected = [r|
+<?xml version="1.0" encoding="utf-8"?>
+<deleteCustomerProfileRequest xmlns="AnetApi/xml/v1/schema/AnetApiSchema.xsd">
+  <merchantAuthentication>
+    <name>API_LOGIN_ID</name>
+    <transactionKey>API_TRANSACTION_KEY</transactionKey>
+  </merchantAuthentication>
+  <customerProfileId>10000</customerProfileId>
+</deleteCustomerProfileRequest>
+|]
+      actual = DeleteCustomerProfileRequest testMerchantAuthentication 10000
+  in assertEncodes expected actual
 
--- apiActual_getCustomerProfileIdsRequest :: ApiRequest
--- apiActual_getCustomerProfileIdsRequest = GetCustomerProfileIds testMerchantAuthentication
-
--- apiExpected_updateCustomerProfileRequest :: String
--- apiExpected_updateCustomerProfileRequest = [r|
--- {
---     "updateCustomerProfileRequest": {
---         "merchantAuthentication": {
---             "name": "API_LOGIN_ID",
---             "transactionKey": "API_TRANSACTION_KEY"
---         },
---         "profile": {
---             "merchantCustomerId": "custId123",
---             "description": "some description",
---             "email": "newaddress@example.com",
---             "customerProfileId": "10000"
---         }
---     }
--- }
--- |]
-
--- apiActual_updateCustomerProfileRequest :: ApiRequest
--- apiActual_updateCustomerProfileRequest = UpdateCustomerProfile testMerchantAuthentication $ CustomerProfile {
---   customer_customerProfileId = Just 10000,
---   customer_merchantCustomerId = "custId123",
---   customer_description = "some description",
---   customer_email = "newaddress@example.com",
---   customer_paymentProfiles = Nothing,
---   customer_shipTos = Nothing
---   }
-
--- apiExpected_deleteCustomerProfileRequest :: String
--- apiExpected_deleteCustomerProfileRequest = [r|
--- {
---     "deleteCustomerProfileRequest": {
---         "merchantAuthentication": {
---             "name": "API_LOGIN_ID",
---             "transactionKey": "API_TRANSACTION_KEY"
---         },
---         "customerProfileId": "10000"
---     }
--- }
--- |]
-
--- apiActual_deleteCustomerProfileRequest :: ApiRequest
--- apiActual_deleteCustomerProfileRequest = DeleteCustomerProfile testMerchantAuthentication 10000
 
 -- apiExpected_createCustomerPaymentProfileRequest :: String
 -- apiExpected_createCustomerPaymentProfileRequest = [r|
@@ -448,11 +440,11 @@ test_createCustomerProfileRequest =
 requestTests :: TestTree
 requestTests = testGroup "API Requests Encode and Decode to JSON correctly" [
   testCase "authenticateTestRequest" test_authenticateTestRequest,
-  testCase "createCustomerProfileRequest" test_createCustomerProfileRequest
-  -- testCase "getCustomerProfileRequest" $ assertEncodes apiExpected_getCustomerProfileRequest apiActual_getCustomerProfileRequest,
-  -- testCase "getCustomerProfileIdsRequest" $ assertEncodes apiExpected_getCustomerProfileIdsRequest apiActual_getCustomerProfileIdsRequest,
-  -- testCase "updateCustomerProfileRequest" $ assertEncodes apiExpected_updateCustomerProfileRequest apiActual_updateCustomerProfileRequest,
-  -- testCase "deleteCustomerProfileRequest" $ assertEncodes apiExpected_deleteCustomerProfileRequest apiActual_deleteCustomerProfileRequest,
+  testCase "createCustomerProfileRequest" test_createCustomerProfileRequest,
+  testCase "getCustomerProfileRequest" test_getCustomerProfileRequest,
+  testCase "getCustomerProfileIdsRequest" test_getCustomerProfileIdsRequest, 
+  testCase "updateCustomerProfileRequest" test_updateCustomerProfileRequest,
+  testCase "deleteCustomerProfileRequest" test_deleteCustomerProfileRequest
   -- testCase "createCustomerPaymentProfileRequest" $ assertEncodes apiExpected_createCustomerPaymentProfileRequest apiActual_createCustomerPaymentProfileRequest,
   -- testCase "getCustomerPaymentProfileRequest" $ assertEncodes apiExpected_getCustomerPaymentProfileRequest apiActual_getCustomerPaymentProfileRequest,
   -- testCase "validateCustomerPaymentProfileRequest" $ assertEncodes apiExpected_validateCustomerPaymentProfileRequest apiActual_validateCustomerPaymentProfileRequest,

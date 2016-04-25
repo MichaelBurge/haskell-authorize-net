@@ -28,11 +28,10 @@ testMerchantAuthentication = MerchantAuthentication {
 
 testCustomerProfile :: CustomerProfile
 testCustomerProfile = CustomerProfile {
-  customer_customerProfileId  = Nothing,
-  customer_merchantCustomerId = "Merchant_Customer_ID",
-  customer_description        = "Profile description here",
-  customer_email              = "customer-profile-email@here.com",
-  customer_paymentProfiles    = Just $ CustomerPaymentProfile {
+  customerProfile_merchantCustomerId = "Merchant_Customer_ID",
+  customerProfile_description        = "Profile description here",
+  customerProfile_email              = "customer-profile-email@here.com",
+  customerProfile_paymentProfiles    = Just $ CustomerPaymentProfile {
       customerPaymentProfile_customerType = Just CustomerType_individual,
       customerPaymentProfile_billTo = Nothing,
       customerPaymentProfile_driversLicense = Nothing,
@@ -45,7 +44,7 @@ testCustomerProfile = CustomerProfile {
           creditCard_cryptogram = Nothing
           }
       },
-  customer_shipTos            = Nothing
+   customerProfile_shipTos = Nothing
   }
 
 -- TODO: We've disabled the JSON tests for now
@@ -59,7 +58,11 @@ assertEncodes expectedS actual = do
     Right expected -> do
       let whitespace = map (fromIntegral . ord) ['\n', ' ']
           stripWhitespace bsl = BSL.filter (not . flip elem whitespace) bsl
-      assertEqual "Encoding" (stripWhitespace expectedBsl) (stripWhitespace actualBsl)
+          normalizeQuotes bsl = flip BSL.map bsl $ \b -> case b of
+            x | x == (fromIntegral $ ord '"') -> fromIntegral $ ord '\''
+            x -> x
+          normalize = normalizeQuotes . stripWhitespace
+      assertEqual "Encoding" (normalize expectedBsl) (normalize actualBsl)
       assertEqual "Decoding" expected actual
 
 assertDecodes :: a -> String -> Assertion
