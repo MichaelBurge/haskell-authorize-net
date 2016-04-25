@@ -1,9 +1,8 @@
-{-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE OverloadedStrings,TypeFamilies #-}
 
 module Network.AuthorizeNet.Api where
 
 import Control.Lens
-import Data.Aeson
 import Data.Char
 
 import qualified Data.ByteString.Lazy as BSL
@@ -16,6 +15,9 @@ import Network.AuthorizeNet.Response
 import Network.AuthorizeNet.Types
 
 import Network.Wreq
+
+instance ApiRequest AuthenticateTestRequest where
+  type ResponseType AuthenticateTestRequest = AuthenticateTestResponse
 
 -- | The sandbox endpoint for Authorize.NET
 sandboxApiConfig :: ApiConfig
@@ -49,20 +51,20 @@ data ApiError = ApiError {
   apiError_messages     :: Maybe Messages
   } deriving (Eq, Show)
 
--- | Makes an Authorize.NET request, hopefully returning an ApiResponse. If an error occurs, returns the raw response body and the Aeson parse error.
-makeRequest :: ApiConfig -> ApiRequest -> IO (Either ApiError ApiResponse)
-makeRequest apiConfig request = do
-  let requestBsl = stripRepeatedCommas $ encode request
-  response <- post (apiConfig_baseUrl apiConfig) $ toJSON request
-  let mResponseBsl = response ^? responseBody
-  case mResponseBsl of
-    Nothing -> return $ Left $ ApiError requestBsl BSL.empty "No response in body" Nothing
-    Just responseBsl ->
-      let strippedBsl = stripBom responseBsl
-      in case decodeRequestResponse request strippedBsl of
-        Left e -> return $ Left $ ApiError requestBsl strippedBsl e Nothing
-        Right response ->
-          let messages = aNetApiResponse_messages $ response_aNetApiResponse response
-          in case messages_resultCode messages of
-            Message_Ok -> return $ Right response
-            Message_Error -> return $ Left $ ApiError requestBsl responseBsl "API call returned an error" $ Just messages
+-- -- | Makes an Authorize.NET request, hopefully returning an ApiResponse. If an error occurs, returns the raw response body and the Aeson parse error.
+-- makeRequest :: ApiConfig -> ApiRequest -> IO (Either ApiError ApiResponse)
+-- makeRequest apiConfig request = do
+--   let requestBsl = stripRepeatedCommas $ encode request
+--   response <- post (apiConfig_baseUrl apiConfig) $ toJSON request
+--   let mResponseBsl = response ^? responseBody
+--   case mResponseBsl of
+--     Nothing -> return $ Left $ ApiError requestBsl BSL.empty "No response in body" Nothing
+--     Just responseBsl ->
+--       let strippedBsl = stripBom responseBsl
+--       in case decodeRequestResponse request strippedBsl of
+--         Left e -> return $ Left $ ApiError requestBsl strippedBsl e Nothing
+--         Right response ->
+--           let messages = aNetApiResponse_messages $ response_aNetApiResponse response
+--           in case messages_resultCode messages of
+--             Message_Ok -> return $ Right response
+--             Message_Error -> return $ Left $ ApiError requestBsl responseBsl "API call returned an error" $ Just messages

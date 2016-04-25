@@ -16,13 +16,14 @@ cabal-version:       >=1.10
 library
   hs-source-dirs:      src
   exposed-modules:     Network.AuthorizeNet.Api
+                     , Network.AuthorizeNet.Instances
                      , Network.AuthorizeNet.Request
                      , Network.AuthorizeNet.Response
                      , Network.AuthorizeNet.TH
                      , Network.AuthorizeNet.Types
+                     , Network.AuthorizeNet.Util
   build-depends:       base >= 4.7 && < 5
                      , wreq
-                     , aeson
                      , lens
                      , stringsearch
                      , transformers
@@ -31,7 +32,9 @@ library
                      , mtl
                      , bytestring
                      , template-haskell
+                     , polyparse
                      , HaXml
+                     , split
   default-language:    Haskell2010
 
 test-suite authorize-net-test
@@ -43,7 +46,6 @@ test-suite authorize-net-test
                      , Test.Network.AuthorizeNet.Response
                      , Test.Network.AuthorizeNet.Util
   build-depends:       base
-                     , aeson >= 0.11
                      , attoparsec
                      , bytestring
                      , authorize-net

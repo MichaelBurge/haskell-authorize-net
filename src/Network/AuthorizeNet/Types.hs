@@ -10,9 +10,9 @@ import Control.Monad
 import Control.Monad.Except
 import Control.Monad.IO.Class
 import Control.Monad.Trans.Either
-import Data.Aeson
-import Data.Aeson.TH
-import Data.Aeson.Types hiding (Parser)
+-- import Data.Aeson
+-- import Data.Aeson.TH
+-- import Data.Aeson.Types hiding (Parser)
 import Data.Int
 import Data.Maybe
 import Data.Monoid
@@ -31,6 +31,10 @@ import qualified Data.Text.Read as T
 import Network.AuthorizeNet.Instances
 import Network.AuthorizeNet.TH
 
+class XmlParsable a => ApiRequest a where
+  type ResponseType a
+
+
 -- | Information about the Authorize.NET API's endpoint. See 'API Endpoints' at http://developer.authorize.net/api/reference/index.html
 -- | If you had a mock of their API set up somewhere for unit tests, you would use it by creating a value of this type.
 -- | This and 'MerchantAuthentication' are required for every request
@@ -41,20 +45,22 @@ data ApiConfig = ApiConfig {
 
 
 newtype NumericString = NumericString Int deriving (Eq, Ord, Show, Num)
-newtype Decimal = Decimal T.Text deriving (Eq, Show, IsString, ToJSON, FromJSON)
+--newtype Decimal = Decimal T.Text deriving (Eq, Show, IsString, ToJSON, FromJSON)
+newtype Decimal = Decimal T.Text deriving (Eq, Show, IsString)
 -- | Some Authorize.NET services in their JSON represent a single element as a single-element list, and others use an object. This type normalizes them into a list.
 data ArrayOf a = ArrayOf [a] deriving (Eq, Show, Foldable)
 
 instance SchemaType a => SchemaType (ArrayOf a) where
   parseSchemaType s = return ArrayOf `apply` many (parseSchemaType s)
+  schemaTypeToXML s (ArrayOf xs) = concatMap (schemaTypeToXML s) xs
 
-instance FromJSON a => FromJSON (ArrayOf a) where
-  parseJSON value = case value of
-    Array _ -> ArrayOf <$> parseJSON value
-    _ -> ArrayOf <$> pure <$> parseJSON value
+-- instance FromJSON a => FromJSON (ArrayOf a) where
+--   parseJSON value = case value of
+--     Array _ -> ArrayOf <$> parseJSON value
+--     _ -> ArrayOf <$> pure <$> parseJSON value
 
-instance ToJSON a => ToJSON (ArrayOf a) where
-  toJSON (ArrayOf xs) = toJSON xs
+-- instance ToJSON a => ToJSON (ArrayOf a) where
+--   toJSON (ArrayOf xs) = toJSON xs
 
 instance IsList (ArrayOf a) where
   type Item (ArrayOf a) = a
@@ -72,15 +78,15 @@ type TaxId = T.Text
 
 type CardCode = NumericString
 
-instance FromJSON NumericString where
-  parseJSON = withText "numericString" $ \t ->
-    case T.decimal t of
-      Left e -> fail e
-      Right (x, "") -> return $ NumericString x
-      Right (x, remainder) -> fail $ T.unpack $ "Additional text found: " <> remainder
+-- instance FromJSON NumericString where
+--   parseJSON = withText "numericString" $ \t ->
+--     case T.decimal t of
+--       Left e -> fail e
+--       Right (x, "") -> return $ NumericString x
+--       Right (x, remainder) -> fail $ T.unpack $ "Additional text found: " <> remainder
 
-instance ToJSON NumericString where
-  toJSON (NumericString x) = String $ T.pack $ show x
+-- instance ToJSON NumericString where
+--   toJSON (NumericString x) = String $ T.pack $ show x
 
 -- | Holds API credentials for Authorize.NET. You should get these when you sign up for a sandbox or production account.
 -- | This and 'ApiConfig' are required for every request.
@@ -91,6 +97,8 @@ data MerchantAuthentication = MerchantAuthentication {
 
 instance Show MerchantAuthentication where
   show x = "MerchantAuthentication { merchantAuthentication_name = \"REDACTED\", merchantAuthentication_transactionKey = \"REDACTED\" }"
+
+$(deriveXml dropRecordName ''MerchantAuthentication)
 
 -- instance ToJSON MerchantAuthentication where
 --   toEncoding = genericToEncoding dropRecordName
@@ -105,10 +113,7 @@ data CustomerType = CustomerType_individual
                   | CustomerType_business
                   deriving (Eq, Show)
 
-$(deriveJSON enumType ''CustomerType)
-
-(.=?) :: (ToJSON a) => T.Text -> Maybe a -> Maybe Pair
-(.=?) field value = (field .=) <$> value
+-- $(deriveJSON enumType ''CustomerType)
 
 -- | anet:nameAndAddressType
 data NameAndAddress = NameAndAddress {
@@ -700,6 +705,9 @@ data SettingName = SettingName_emailCustomer
                  | SettingName_hostedProfileCardCodeRequired
                  deriving (Eq, Show)
 
+$(deriveXml enumType ''SettingName)
+
+
 -- instance ToJSON SettingName where
 --   toEncoding = genericToEncoding enumType
 -- instance FromJSON SettingName where
@@ -800,6 +808,9 @@ mkTransactionRequest transactionType amount = TransactionRequest transactionType
 data MessageType = Message_Ok
                  | Message_Error
                  deriving (Eq, Show)
+
+$(deriveXml enumType ''MessageType)
+                          
 -- instance ToJSON MessageType where
 --   toEncoding = genericToEncoding enumType
 -- instance FromJSON MessageType where
@@ -812,6 +823,8 @@ data Message = Message {
   message_text :: T.Text
   } deriving (Eq, Show)
 
+$(deriveXml dropRecordName ''Message)
+
 -- instance ToJSON Message where
 --   toEncoding = genericToEncoding dropRecordName
 -- instance FromJSON Message where
@@ -822,6 +835,8 @@ data Messages = Messages {
   messages_resultCode :: MessageType,
   messages_message    :: ArrayOf Message
   } deriving (Eq, Show)
+
+$(deriveXml dropRecordName ''Messages)
 
 -- instance ToJSON Messages where
 --   toEncoding = genericToEncoding dropRecordName

@@ -1,9 +1,6 @@
-{-# LANGUAGE TemplateHaskell, RecordWildCards #-}
+{-# LANGUAGE TemplateHaskell, RecordWildCards,ScopedTypeVariables,FlexibleContexts #-}
 
 module Network.AuthorizeNet.Response where
-
-import Data.Aeson
-import Data.Aeson.TH
 
 import qualified Data.ByteString.Lazy as BSL
 import qualified Data.Text as T
@@ -11,6 +8,7 @@ import qualified Data.Text as T
 import Network.AuthorizeNet.Request
 import Network.AuthorizeNet.TH
 import Network.AuthorizeNet.Types
+import Network.AuthorizeNet.Util
 
 -- | The API responses are documented at http://developer.authorize.net/api/reference/index.html
 data AuthenticateTestResponse = AuthenticateTestResponse {
@@ -19,7 +17,9 @@ data AuthenticateTestResponse = AuthenticateTestResponse {
   authenticateTestResponse_sessionToken :: Maybe T.Text
   } deriving (Eq, Show)
 
-$(deriveJSON dropRecordName ''AuthenticateTestResponse)
+$(deriveXml dropRecordName ''AuthenticateTestResponse)
+
+-- $(deriveJSON dropRecordName ''AuthenticateTestResponse)
 
 data CreateCustomerProfileResponse = CreateCustomerProfileResponse {
   createCustomerProfileResponse_refId                         :: Maybe T.Text,
@@ -33,7 +33,7 @@ data CreateCustomerProfileResponse = CreateCustomerProfileResponse {
   createCustomerProfileResponse_validationDirectResponseList  :: [T.Text]
   } deriving (Eq, Show)
                    
-$(deriveJSON dropRecordName ''CreateCustomerProfileResponse)
+-- $(deriveJSON dropRecordName ''CreateCustomerProfileResponse)
 
 mkAuthenticateTestResponse :: Messages -> AuthenticateTestResponse
 mkAuthenticateTestResponse messages = AuthenticateTestResponse Nothing messages Nothing
@@ -47,7 +47,7 @@ data GetCustomerProfileResponse = GetCustomerProfileResponse {
   getCustomerProfileResponse_subscriptionIds :: ArrayOf SubscriptionId
   } deriving (Eq, Show)
 
-$(deriveJSON dropRecordName ''GetCustomerProfileResponse)
+-- $(deriveJSON dropRecordName ''GetCustomerProfileResponse)
 
 data GetCustomerProfileIdsResponse = GetCustomerProfileIdsResponse {
   getCustomerProfileIdsResponse_refId        :: Maybe T.Text,
@@ -57,7 +57,7 @@ data GetCustomerProfileIdsResponse = GetCustomerProfileIdsResponse {
   getCustomerProfileIdsResponse_ids          :: ArrayOf CustomerProfileId
   } deriving (Eq, Show)
 
-$(deriveJSON dropRecordName ''GetCustomerProfileIdsResponse)
+-- $(deriveJSON dropRecordName ''GetCustomerProfileIdsResponse)
 
 data UpdateCustomerProfileResponse = UpdateCustomerProfileResponse {
   updateCustomerProfileResponse_refId        :: Maybe T.Text,
@@ -65,7 +65,7 @@ data UpdateCustomerProfileResponse = UpdateCustomerProfileResponse {
   updateCustomerProfileResponse_sessionToken :: Maybe T.Text
   } deriving (Eq, Show)
 
-$(deriveJSON dropRecordName ''UpdateCustomerProfileResponse)
+-- $(deriveJSON dropRecordName ''UpdateCustomerProfileResponse)
 
 data DeleteCustomerProfileResponse = DeleteCustomerProfileResponse {
   deleteCustomerProfileResponse_refId        :: Maybe T.Text,
@@ -73,7 +73,7 @@ data DeleteCustomerProfileResponse = DeleteCustomerProfileResponse {
   deleteCustomerProfileResponse_sessionToken :: Maybe T.Text
   } deriving (Eq, Show)
 
-$(deriveJSON dropRecordName ''DeleteCustomerProfileResponse)
+-- $(deriveJSON dropRecordName ''DeleteCustomerProfileResponse)
 
 data CreateCustomerPaymentProfileResponse = CreateCustomerPaymentProfileResponse {
   createCustomerPaymentProfileResponse_refId        :: Maybe T.Text,
@@ -84,7 +84,7 @@ data CreateCustomerPaymentProfileResponse = CreateCustomerPaymentProfileResponse
   createCustomerPaymentProfileResponse_validationDirectResponse :: Maybe T.Text
   } deriving (Eq, Show)
 
-$(deriveJSON dropRecordName ''CreateCustomerPaymentProfileResponse)
+-- $(deriveJSON dropRecordName ''CreateCustomerPaymentProfileResponse)
 
 data GetCustomerPaymentProfileResponse = GetCustomerPaymentProfileResponse {
   getCustomerPaymentProfileResponse_refId        :: Maybe T.Text,
@@ -94,18 +94,18 @@ data GetCustomerPaymentProfileResponse = GetCustomerPaymentProfileResponse {
   getCustomerPaymentProfileResponse_paymentProfile :: Maybe CustomerPaymentProfileMasked
   } deriving (Eq, Show)
 
-$(deriveJSON dropRecordName ''GetCustomerPaymentProfileResponse)
+-- $(deriveJSON dropRecordName ''GetCustomerPaymentProfileResponse)
 
-data GetCustomerPaymentProfileListResponse = R_getCustomerPaymentProfileListResponse {
+data GetCustomerPaymentProfileListResponse = GetCustomerPaymentProfileListResponse {
   getCustomerPaymentProfileListResponse_refId        :: Maybe T.Text,
   getCustomerPaymentProfileListResponse_messages     :: Messages,
   getCustomerPaymentProfileListResponse_sessionToken :: Maybe T.Text,
 
   getCustomerPaymentProfileListResponse_totalNumInResultSet :: NumericString,
   getCustomerPaymentProfileListResponse_paymentProfiles     :: Maybe ArrayOfCustomerPaymentProfileListItem
-  } | R_DummyConstructorForAeson deriving (Eq, Show)
+  } deriving (Eq, Show)
 
-$(deriveJSON choiceType ''GetCustomerPaymentProfileListResponse)
+-- $(deriveJSON choiceType ''GetCustomerPaymentProfileListResponse) -- 
 
 data ValidateCustomerPaymentProfileResponse = ValidateCustomerPaymentProfileResponse {
   validateCustomerPaymentProfileResponse_refId        :: Maybe T.Text,
@@ -115,7 +115,7 @@ data ValidateCustomerPaymentProfileResponse = ValidateCustomerPaymentProfileResp
   validateCustomerPaymentProfileResponse_directResponse :: Maybe T.Text
   } deriving (Eq, Show)
 
-$(deriveJSON dropRecordName ''ValidateCustomerPaymentProfileResponse)
+-- $(deriveJSON dropRecordName ''ValidateCustomerPaymentProfileResponse)
 
 data UpdateCustomerPaymentProfileResponse = UpdateCustomerPaymentProfileResponse {
   updateCustomerPaymentProfileResponse_refId        :: Maybe T.Text,
@@ -125,7 +125,7 @@ data UpdateCustomerPaymentProfileResponse = UpdateCustomerPaymentProfileResponse
   updateCustomerPaymentProfileResponse_validationDirectResponse :: Maybe T.Text
   } deriving (Eq, Show)
 
-$(deriveJSON dropRecordName ''UpdateCustomerPaymentProfileResponse)
+-- $(deriveJSON dropRecordName ''UpdateCustomerPaymentProfileResponse)
 
 data DeleteCustomerPaymentProfileResponse = DeleteCustomerPaymentProfileResponse {
   deleteCustomerPaymentProfileResponse_refId        :: Maybe T.Text,
@@ -133,7 +133,7 @@ data DeleteCustomerPaymentProfileResponse = DeleteCustomerPaymentProfileResponse
   deleteCustomerPaymentProfileResponse_sessionToken :: Maybe T.Text
   } deriving (Eq, Show)
 
-$(deriveJSON dropRecordName ''DeleteCustomerPaymentProfileResponse)
+-- $(deriveJSON dropRecordName ''DeleteCustomerPaymentProfileResponse)
 
 data GetHostedProfilePageResponse = GetHostedProfilePageResponse {
   getHostedProfilePageResponse_refId        :: Maybe T.Text,
@@ -143,8 +143,8 @@ data GetHostedProfilePageResponse = GetHostedProfilePageResponse {
   getHostedProfilePageResponse_token        :: Maybe T.Text
   } deriving (Eq, Show)
 
-$(deriveJSON dropRecordName ''GetHostedProfilePageResponse)
-
+-- $(deriveJSON dropRecordName ''GetHostedProfilePageResponse)
+--  
 data CreateProfileResponse = CreateProfileResponse {
   createProfileResponse_refId                         :: Maybe T.Text,
   createProfileResponse_messages                      :: Messages,
@@ -154,7 +154,7 @@ data CreateProfileResponse = CreateProfileResponse {
   createProfileResponse_customerShippingAddressIdList :: Maybe (ArrayOf CustomerShippingAddressId)
   } deriving (Eq, Show)
                              
-$(deriveJSON dropRecordName ''CreateProfileResponse)
+-- $(deriveJSON dropRecordName ''CreateProfileResponse)
 
 data TransactionResponse = TransactionResponse {
   transactionResponse_responseCode        :: Maybe T.Text,
@@ -181,7 +181,7 @@ data TransactionResponse = TransactionResponse {
   transactionResponse_emvResponse         :: Maybe EmvResponse
   } deriving (Eq, Show)
 
-$(deriveJSON dropRecordName ''TransactionResponse)
+-- $(deriveJSON dropRecordName ''TransactionResponse)
 
 mkTransactionResponse :: TransactionResponse
 mkTransactionResponse = TransactionResponse Nothing Nothing Nothing Nothing Nothing Nothing Nothing Nothing  Nothing Nothing  Nothing Nothing  Nothing Nothing  Nothing Nothing  Nothing Nothing  Nothing Nothing Nothing Nothing 
@@ -195,7 +195,7 @@ data CreateTransactionResponse = CreateTransactionResponse {
   createTransactionResponse_profileResponse     :: Maybe CreateProfileResponse
   } deriving (Eq, Show)
 
-$(deriveJSON dropRecordName ''CreateTransactionResponse)
+-- $(deriveJSON dropRecordName ''CreateTransactionResponse)
 
 data ApiResponse = R_AuthenticateTest AuthenticateTestResponse
                  | R_CreateCustomerProfile CreateCustomerProfileResponse
@@ -214,24 +214,24 @@ data ApiResponse = R_AuthenticateTest AuthenticateTestResponse
                  | R_CreateTransaction CreateTransactionResponse
                  deriving (Eq, Show)
 
+
 -- | Decodes a bytestring into the appropriate response given a request
-decodeRequestResponse :: ApiRequest -> BSL.ByteString -> Either String ApiResponse
-decodeRequestResponse apiRequest bsl = case apiRequest of
-  AuthenticateTest{}               -> R_AuthenticateTest               <$> eitherDecode' bsl
-  CreateCustomerProfile{}          -> R_CreateCustomerProfile          <$> eitherDecode' bsl
-  GetCustomerProfile{}             -> R_GetCustomerProfile             <$> eitherDecode' bsl
-  GetCustomerProfileIds{}          -> R_GetCustomerProfileIds          <$> eitherDecode' bsl
-  UpdateCustomerProfile{}          -> R_UpdateCustomerProfile          <$> eitherDecode' bsl
-  DeleteCustomerProfile{}          -> R_DeleteCustomerProfile          <$> eitherDecode' bsl
-  CreateCustomerPaymentProfile{}   -> R_CreateCustomerPaymentProfile   <$> eitherDecode' bsl
-  GetCustomerPaymentProfile{}      -> R_GetCustomerPaymentProfile      <$> eitherDecode' bsl
-  GetCustomerPaymentProfileList{}  -> R_GetCustomerPaymentProfileList  <$> eitherDecode' bsl
-  ValidateCustomerPaymentProfile{} -> R_ValidateCustomerPaymentProfile <$> eitherDecode' bsl
-  UpdateCustomerPaymentProfile{}   -> R_UpdateCustomerPaymentProfile   <$> eitherDecode' bsl
-  DeleteCustomerPaymentProfile{}   -> R_DeleteCustomerPaymentProfile   <$> eitherDecode' bsl
-  CreateCustomerProfile{}          -> R_CreateProfile                  <$> eitherDecode' bsl
-  GetHostedProfilePage{}           -> R_GetHostedProfilePage           <$> eitherDecode' bsl
-  CreateTransaction{}              -> R_CreateTransaction              <$> eitherDecode' bsl
+decodeRequestResponse :: forall a. (ApiRequest a, ApiRequest (ResponseType a)) => a -> BSL.ByteString -> Either String (ResponseType a)
+decodeRequestResponse apiRequest bsl = runParseSchemaType bsl :: Either String (ResponseType a)
+  -- CreateCustomerProfile{}          -> R_CreateCustomerProfile          <$> runParseSchemaType bsl
+  -- GetCustomerProfile{}             -> R_GetCustomerProfile             <$> runParseSchemaType bsl
+  -- GetCustomerProfileIds{}          -> R_GetCustomerProfileIds          <$> runParseSchemaType bsl
+  -- UpdateCustomerProfile{}          -> R_UpdateCustomerProfile          <$> runParseSchemaType bsl
+  -- DeleteCustomerProfile{}          -> R_DeleteCustomerProfile          <$> runParseSchemaType bsl
+  -- CreateCustomerPaymentProfile{}   -> R_CreateCustomerPaymentProfile   <$> runParseSchemaType bsl
+  -- GetCustomerPaymentProfile{}      -> R_GetCustomerPaymentProfile      <$> runParseSchemaType bsl
+  -- GetCustomerPaymentProfileList{}  -> R_GetCustomerPaymentProfileList  <$> runParseSchemaType bsl
+  -- ValidateCustomerPaymentProfile{} -> R_ValidateCustomerPaymentProfile <$> runParseSchemaType bsl
+  -- UpdateCustomerPaymentProfile{}   -> R_UpdateCustomerPaymentProfile   <$> runParseSchemaType bsl
+  -- DeleteCustomerPaymentProfile{}   -> R_DeleteCustomerPaymentProfile   <$> runParseSchemaType bsl
+  -- CreateCustomerProfile{}          -> R_CreateProfile                  <$> runParseSchemaType bsl
+  -- GetHostedProfilePage{}           -> R_GetHostedProfilePage           <$> runParseSchemaType bsl
+  -- CreateTransaction{}              -> R_CreateTransaction              <$> runParseSchemaType bsl
 
 -- | anet:ANetApiResponse
 data ANetApiResponse = ANetApiResponse {
@@ -243,17 +243,17 @@ data ANetApiResponse = ANetApiResponse {
 -- | All Response records should be 'extensions' of the ANetApiResponse type, but Haskell's type system doesn't support that so we duplicate the fields on each type. This maps the duplicated fields back onto an instance of the extended type for easier use.
 response_aNetApiResponse :: ApiResponse -> ANetApiResponse
 response_aNetApiResponse (R_AuthenticateTest AuthenticateTestResponse{..}) = ANetApiResponse authenticateTestResponse_refId authenticateTestResponse_messages authenticateTestResponse_sessionToken
-response_aNetApiResponse (R_CreateCustomerProfile CreateCustomerProfileResponse{..}) = ANetApiResponse createCustomerProfileResponse_refId createCustomerProfileResponse_messages createCustomerProfileResponse_sessionToken
-response_aNetApiResponse (R_GetCustomerProfile GetCustomerProfileResponse{..}) = ANetApiResponse getCustomerProfileResponse_refId getCustomerProfileResponse_messages getCustomerProfileResponse_sessionToken
-response_aNetApiResponse (R_GetCustomerProfileIds GetCustomerProfileIdsResponse{..}) = ANetApiResponse getCustomerProfileIdsResponse_refId getCustomerProfileIdsResponse_messages getCustomerProfileIdsResponse_sessionToken
-response_aNetApiResponse (R_UpdateCustomerProfile UpdateCustomerProfileResponse{..}) = ANetApiResponse updateCustomerProfileResponse_refId updateCustomerProfileResponse_messages updateCustomerProfileResponse_sessionToken
-response_aNetApiResponse (R_DeleteCustomerProfile DeleteCustomerProfileResponse{..}) = ANetApiResponse deleteCustomerProfileResponse_refId deleteCustomerProfileResponse_messages deleteCustomerProfileResponse_sessionToken
-response_aNetApiResponse (R_CreateCustomerPaymentProfile CreateCustomerPaymentProfileResponse{..}) = ANetApiResponse createCustomerPaymentProfileResponse_refId createCustomerPaymentProfileResponse_messages createCustomerPaymentProfileResponse_sessionToken
-response_aNetApiResponse (R_GetCustomerPaymentProfile GetCustomerPaymentProfileResponse{..}) = ANetApiResponse getCustomerPaymentProfileResponse_refId getCustomerPaymentProfileResponse_messages getCustomerPaymentProfileResponse_sessionToken
-response_aNetApiResponse (R_GetCustomerPaymentProfileList R_getCustomerPaymentProfileListResponse{..}) = ANetApiResponse getCustomerPaymentProfileListResponse_refId getCustomerPaymentProfileListResponse_messages getCustomerPaymentProfileListResponse_sessionToken
-response_aNetApiResponse (R_ValidateCustomerPaymentProfile ValidateCustomerPaymentProfileResponse{..}) = ANetApiResponse validateCustomerPaymentProfileResponse_refId validateCustomerPaymentProfileResponse_messages validateCustomerPaymentProfileResponse_sessionToken
-response_aNetApiResponse (R_UpdateCustomerPaymentProfile UpdateCustomerPaymentProfileResponse{..}) = ANetApiResponse updateCustomerPaymentProfileResponse_refId updateCustomerPaymentProfileResponse_messages updateCustomerPaymentProfileResponse_sessionToken
-response_aNetApiResponse (R_DeleteCustomerPaymentProfile DeleteCustomerPaymentProfileResponse{..}) = ANetApiResponse deleteCustomerPaymentProfileResponse_refId deleteCustomerPaymentProfileResponse_messages deleteCustomerPaymentProfileResponse_sessionToken
-response_aNetApiResponse (R_CreateProfile CreateProfileResponse{..}) = ANetApiResponse Nothing createProfileResponse_messages Nothing
-response_aNetApiResponse (R_GetHostedProfilePage GetHostedProfilePageResponse{..}) = ANetApiResponse getHostedProfilePageResponse_refId getHostedProfilePageResponse_messages getHostedProfilePageResponse_sessionToken
-response_aNetApiResponse (R_CreateTransaction CreateTransactionResponse{..}) = ANetApiResponse createTransactionResponse_refId createTransactionResponse_messages createTransactionResponse_sessionToken
+-- response_aNetApiResponse (R_CreateCustomerProfile CreateCustomerProfileResponse{..}) = ANetApiResponse createCustomerProfileResponse_refId createCustomerProfileResponse_messages createCustomerProfileResponse_sessionToken
+-- response_aNetApiResponse (R_GetCustomerProfile GetCustomerProfileResponse{..}) = ANetApiResponse getCustomerProfileResponse_refId getCustomerProfileResponse_messages getCustomerProfileResponse_sessionToken
+-- response_aNetApiResponse (R_GetCustomerProfileIds GetCustomerProfileIdsResponse{..}) = ANetApiResponse getCustomerProfileIdsResponse_refId getCustomerProfileIdsResponse_messages getCustomerProfileIdsResponse_sessionToken
+-- response_aNetApiResponse (R_UpdateCustomerProfile UpdateCustomerProfileResponse{..}) = ANetApiResponse updateCustomerProfileResponse_refId updateCustomerProfileResponse_messages updateCustomerProfileResponse_sessionToken
+-- response_aNetApiResponse (R_DeleteCustomerProfile DeleteCustomerProfileResponse{..}) = ANetApiResponse deleteCustomerProfileResponse_refId deleteCustomerProfileResponse_messages deleteCustomerProfileResponse_sessionToken
+-- response_aNetApiResponse (R_CreateCustomerPaymentProfile CreateCustomerPaymentProfileResponse{..}) = ANetApiResponse createCustomerPaymentProfileResponse_refId createCustomerPaymentProfileResponse_messages createCustomerPaymentProfileResponse_sessionToken
+-- response_aNetApiResponse (R_GetCustomerPaymentProfile GetCustomerPaymentProfileResponse{..}) = ANetApiResponse getCustomerPaymentProfileResponse_refId getCustomerPaymentProfileResponse_messages getCustomerPaymentProfileResponse_sessionToken
+-- response_aNetApiResponse (R_GetCustomerPaymentProfileList GetCustomerPaymentProfileListResponse{..}) = ANetApiResponse getCustomerPaymentProfileListResponse_refId getCustomerPaymentProfileListResponse_messages getCustomerPaymentProfileListResponse_sessionToken
+-- response_aNetApiResponse (R_ValidateCustomerPaymentProfile ValidateCustomerPaymentProfileResponse{..}) = ANetApiResponse validateCustomerPaymentProfileResponse_refId validateCustomerPaymentProfileResponse_messages validateCustomerPaymentProfileResponse_sessionToken
+-- response_aNetApiResponse (R_UpdateCustomerPaymentProfile UpdateCustomerPaymentProfileResponse{..}) = ANetApiResponse updateCustomerPaymentProfileResponse_refId updateCustomerPaymentProfileResponse_messages updateCustomerPaymentProfileResponse_sessionToken
+-- response_aNetApiResponse (R_DeleteCustomerPaymentProfile DeleteCustomerPaymentProfileResponse{..}) = ANetApiResponse deleteCustomerPaymentProfileResponse_refId deleteCustomerPaymentProfileResponse_messages deleteCustomerPaymentProfileResponse_sessionToken
+-- response_aNetApiResponse (R_CreateProfile CreateProfileResponse{..}) = ANetApiResponse Nothing createProfileResponse_messages Nothing
+-- response_aNetApiResponse (R_GetHostedProfilePage GetHostedProfilePageResponse{..}) = ANetApiResponse getHostedProfilePageResponse_refId getHostedProfilePageResponse_messages getHostedProfilePageResponse_sessionToken
+-- response_aNetApiResponse (R_CreateTransaction CreateTransactionResponse{..}) = ANetApiResponse createTransactionResponse_refId createTransactionResponse_messages createTransactionResponse_sessionToken
