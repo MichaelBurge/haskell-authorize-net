@@ -35,6 +35,7 @@ library
                      , polyparse
                      , HaXml
                      , split
+                     , th-lift
   default-language:    Haskell2010
 
 test-suite authorize-net-test

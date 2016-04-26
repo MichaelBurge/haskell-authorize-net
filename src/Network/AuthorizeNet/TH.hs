@@ -7,10 +7,12 @@ module Network.AuthorizeNet.TH (
   schemaTypeToXML
   ) where
 
+import Network.AuthorizeNet.Types
+
 import Control.Monad
 import Language.Haskell.TH
+import Language.Haskell.TH.Lift
 import Language.Haskell.TH.Syntax
-import Network.AuthorizeNet.Instances
 
 import Text.XML.HaXml hiding (Name, element, literal, x)
 import Text.XML.HaXml.Schema.Schema
@@ -25,8 +27,11 @@ data Options = Options {
   fieldLabelModifier     :: String -> String,
   constructorTagModifier :: String -> String,
   typeTagModifier        :: String -> String,
-  allNullaryToStringTag  :: Bool
+  allNullaryToStringTag  :: Bool,
+  namespaceLevel         :: XmlNamespaceLevel
   }
+
+$(deriveLift ''XmlNamespaceLevel)
 
 dropUntilUnderscore :: String -> String
 dropUntilUnderscore name =
@@ -46,7 +51,8 @@ defaultOptions = Options {
   fieldLabelModifier     = dropUntilUnderscore,
   constructorTagModifier = dropUntilUnderscore,
   typeTagModifier        = lowerFirst . dropHaskellModuleNames,
-  allNullaryToStringTag  = True
+  allNullaryToStringTag  = True,
+  namespaceLevel         = Namespace_xsd
   }
 
 -- | Drops everything up to and including the first underscore, so 'recordType_fieldOne' becomes 'fieldOne'
@@ -80,8 +86,7 @@ withType name f = do
 data SpecialType = SMaybe | SNone deriving (Show)
 
 specialType :: Type -> SpecialType
-specialType (AppT (ConT m) _) | m == ''Maybe = SMaybe
---specialType (AppT ListT _) = SList
+specialType (AppT (ConT m) x) | m == ''Maybe = SMaybe
 specialType _ = SNone
 
 type XmlName = String
@@ -188,35 +193,37 @@ deriveXmlObject opts name = withType name $ \name tvbs cons -> do
         [con] -> con
         _ -> error $ ns ++ "Expected exactly one constructor on type " ++ showName name
       conN = conName con
-      xV = VarE $ mkName "x"
-      sV = VarE $ mkName "s"
-  let parseOneField :: Exp -> VarStrictType -> Q Exp
-      parseOneField previous (fieldNameRaw, _, ty) = do
+      xV = varE $ mkName "x"
+      sV = varE $ mkName "s"
+  let parseOneField :: VarStrictType -> Q Exp
+      parseOneField (fieldNameRaw, _, ty) = do
         let fieldName = showName fieldNameRaw :: String
             xmlName = fieldLabelModifier opts fieldName
-        let parseExpr = [| parseSchemaType $(return $ LitE $ StringL xmlName) |]
-        currentNode <- case specialType ty of
-          SMaybe -> [| optional $(parseExpr) |]
+        let parseExpr = [| parseSchemaType $(litE $ stringL xmlName) |]
+        case specialType ty of
+              SMaybe -> [| optional $(parseExpr) |]
 --          SList  -> [| $(return $ ConE $ mkName "ArrayOf") <$> many $(parseExpr) |]
-          SNone  -> parseExpr
-        return $ InfixE (Just previous) (VarE $ mkName "apply") $ Just currentNode
+              SNone  -> parseExpr
       parseConstructor :: Con -> ExpQ
-      parseConstructor (RecC name vsts) = foldM parseOneField (AppE (VarE $ mkName "return") (ConE name)) vsts
+      parseConstructor (RecC name vsts) =
+        let joinExpr = varE $ mkName "apply"
+            exprs = [appE (varE $ mkName "return") (conE name) ] ++ map parseOneField vsts
+        in joinExprs exprs joinExpr
       parseConstructor _ = error $ ns ++ "Unsupported constructor for type"
       decParseSchemaType :: DecsQ
       decParseSchemaType = do
         body <- [| do
-                    (pos,e) <- posnElement [$(return sV)]
+                    (pos,e) <- posnElement [$(sV)]
                     commit $ interior e $ $(parseConstructor con)
                  |]
         return $ pure $ FunD (mkName "parseSchemaType") [Clause [VarP $ mkName "s"] (NormalB body) []]
       toXmlOneField :: VarStrictType -> ExpQ
       toXmlOneField (fieldName, _, ty) =
         let xmlName = fieldLabelModifier opts $ showName fieldName
-            sttxE = [| schemaTypeToXML $(return $ LitE $ StringL xmlName) |]
+            sttxE = [| schemaTypeToXML $(litE $ stringL xmlName) |]
         in case specialType ty of
-          SMaybe -> [| maybe [] $(sttxE) $ $(return $ AppE (VarE fieldName) xV) |]
-          SNone -> [| $(sttxE) $ $(return $ AppE (VarE fieldName) xV) |]
+          SMaybe -> [| maybe [] $(sttxE) $ $(appE (varE fieldName) xV) |]
+          SNone -> [| $(sttxE) $ $(appE (varE fieldName) xV) |]
       decSchemaTypeToXml :: DecsQ
       decSchemaTypeToXml =
         let vsts = case con of
@@ -269,8 +276,9 @@ getWrappedTypeName name = do
 deriveXmlParsable :: Options -> Name -> Q [Dec]
 deriveXmlParsable opts name =
   [d|
-   instance XmlParsable $(return $ ConT name) where
-     xmlParsableName _ = $(return $ LitE $ StringL $ typeTagModifier opts $ showName name)
+   instance XmlParsable $(conT name) where
+     xmlParsableName _ = $(litE $ stringL $ typeTagModifier opts $ showName name)
+     xmlNamespaceLevel = const $(lift $ namespaceLevel opts)
   |]
 
 -- | The main intended entry point

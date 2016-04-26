@@ -20,23 +20,22 @@ import Test.Network.AuthorizeNet.Util
 testMessages :: Messages
 testMessages = Messages Message_Ok $ ArrayOf [ Message "I00001" "Successful." ]
 
-apiExpected_authenticateTestResponse :: String
-apiExpected_authenticateTestResponse = [r|
-{
-    "messages": {
-        "resultCode": "Ok",
-        "message": [
-            {
-                "code": "I00001",
-                "text": "Successful."
-            }
-        ]
-    }
-}
+test_authenticateTestResponse :: Assertion
+test_authenticateTestResponse =
+  let expected = [r|
+<?xml version="1.0" encoding="utf-8"?>
+<authenticateTestResponse xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns="AnetApi/xml/v1/schema/AnetApiSchema.xsd">
+    <messages>
+        <resultCode>Ok</resultCode>
+        <message>
+            <code>I00001</code>
+            <text>Successful.</text>
+        </message>
+    </messages>
+</authenticateTestResponse>
 |]
-
-apiActual_authenticateTestResponse :: AuthenticateTestResponse
-apiActual_authenticateTestResponse = mkAuthenticateTestResponse testMessages
+      actual = mkAuthenticateTestResponse testMessages
+  in assertEncodes expected actual
 
 -- apiExpected_createCustomerProfileResponse :: String
 -- apiExpected_createCustomerProfileResponse = [r|
@@ -457,7 +456,7 @@ apiActual_authenticateTestResponse = mkAuthenticateTestResponse testMessages
 
 responseTests :: TestTree
 responseTests = testGroup "API Responses Encode and Decode to JSON correctly" [
-      -- testCase "authenticateTestResponse" $ assertEncodes apiExpected_authenticateTestResponse apiActual_authenticateTestResponse,
+      testCase "authenticateTestResponse" test_authenticateTestResponse
       -- testCase "createCustomerProfileResponse" $ assertEncodes apiExpected_createCustomerProfileResponse apiActual_createCustomerProfileResponse,
       -- testCase "getCustomerProfileResponse" $ assertDecodes (undefined :: GetCustomerProfileResponse) apiExpected_getCustomerProfileResponse,
       -- testCase "getCustomerProfileIdsResponse" test_getCustomerProfileIdsResponse,

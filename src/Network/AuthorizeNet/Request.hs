@@ -6,6 +6,7 @@ import GHC.Generics
 
 import qualified Data.Text as T
 
+import Network.AuthorizeNet.Instances
 import Network.AuthorizeNet.TH
 import Network.AuthorizeNet.Types  
 
@@ -60,49 +61,74 @@ data CreateCustomerPaymentProfileRequest = CreateCustomerPaymentProfileRequest {
 
 $(deriveXml ''CreateCustomerPaymentProfileRequest)
 
-  --  | GetCustomerPaymentProfile {
-  -- getCustomerPaymentProfile_merchantAuthentication   :: MerchantAuthentication,
-  -- getCustomerPaymentProfile_customerProfileId        :: CustomerProfileId,
-  -- getCustomerPaymentProfile_customerPaymentProfileId :: CustomerPaymentProfileId
-  -- } | GetCustomerPaymentProfileList {
-  -- getCustomerPaymentProfileList_merchantAuthentication :: MerchantAuthentication,
-  -- getCustomerPaymentProfileList_searchtype             :: CustomerPaymentProfileSearchType,
-  -- getCustomerPaymentProfileList_month                  :: T.Text,
-  -- getCustomerPaymentProfileList_sorting                :: CustomerPaymentProfileSorting,
-  -- getCustomerPaymentProfileList_paging                 :: Paging
-  -- } | ValidateCustomerPaymentProfile {
-  -- validateCustomerPaymentProfile_merchantAuthentication    :: MerchantAuthentication,
-  -- validateCustomerPaymentProfile_customerProfileId         :: CustomerProfileId,
-  -- validateCustomerPaymentProfile_customerPaymentProfileId  :: CustomerPaymentProfileId,
-  -- validateCustomerPaymentProfile_customerShippingAddressId :: Maybe CustomerShippingAddressId,
-  -- validateCustomerPaymentProfile_cardCode                  :: Maybe CardCode,
-  -- validateCustomerPaymentProfile_validationMode            :: ValidationMode
-  -- } | UpdateCustomerPaymentProfile {
-  -- validateCustomerPaymentProfile_merchantAuthentication :: MerchantAuthentication,
-  -- validateCustomerPaymentProfile_customerProfileId      :: CustomerProfileId,
-  -- validateCustomerPaymentProfile_paymentProfile         :: CustomerPaymentProfileEx,
-  -- validateCustomerPaymentProfile_validationMode         :: ValidationMode
-  -- } | DeleteCustomerPaymentProfile {
-  -- deleteCustomerPaymentProfile_merchantAuthentication   :: MerchantAuthentication,
-  -- deleteCustomerPaymentProfile_customerProfileId        :: CustomerProfileId,
-  -- deleteCustomerPaymentProfile_customerPaymentProfileId :: CustomerPaymentProfileId
-  -- } | CreateCustomerProfileFromTransaction {
-  -- createCustomerProfileFromTransaction_merchantAuthentication :: MerchantAuthentication,
-  -- createCustomerProfileFromTransaction_transId                :: TransactionId,
-  -- createCustomerProfileFromTransaction_customer               :: Maybe CustomerProfileBase,
-  -- createCustomerProfileFromTransaction_customerProfileId      :: Maybe CustomerProfileId
-  -- } | GetHostedProfilePage {
-  -- getHostedProfilePage_merchantAuthentication :: MerchantAuthentication,
-  -- getHostedProfilePage_refId                  :: Maybe T.Text,
-  -- getHostedProfilePage_customerProfileId      :: CustomerProfileId,
-  -- getHostedProfilePage_hostedProfileSettings  :: Maybe ArrayOfSetting
-  -- } | CreateTransaction {
-  -- createTransaction_merchantAuthentication :: MerchantAuthentication,
-  -- createTransaction_refId                  :: Maybe T.Text,
-  -- createTransaction_transactionRequest     :: TransactionRequest
-  -- }
--- instance ToJSON ApiRequest where
---   toEncoding = genericToEncoding requestOptions
+data GetCustomerPaymentProfileRequest = GetCustomerPaymentProfileRequest {
+  getCustomerPaymentProfileRequest_merchantAuthentication   :: MerchantAuthentication,
+  getCustomerPaymentProfileRequest_customerProfileId        :: CustomerProfileId,
+  getCustomerPaymentProfileRequest_customerPaymentProfileId :: CustomerPaymentProfileId
+  } deriving (Eq, Show)
 
--- instance FromJSON ApiRequest where
---   parseJSON = genericParseJSON requestOptions
+$(deriveXml ''GetCustomerPaymentProfileRequest)
+
+data GetCustomerPaymentProfileListRequest = GetCustomerPaymentProfileListRequest {
+  getCustomerPaymentProfileListRequest_merchantAuthentication :: MerchantAuthentication,
+  getCustomerPaymentProfileListRequest_searchtype             :: CustomerPaymentProfileSearchType,
+  getCustomerPaymentProfileListRequest_month                  :: T.Text,
+  getCustomerPaymentProfileListRequest_sorting                :: CustomerPaymentProfileSorting,
+  getCustomerPaymentProfileListRequest_paging                 :: Paging
+  } deriving (Eq, Show)
+
+$(deriveXml ''GetCustomerPaymentProfileListRequest)
+
+data ValidateCustomerPaymentProfileRequest = ValidateCustomerPaymentProfileRequest {
+  validateCustomerPaymentProfileRequest_merchantAuthentication    :: MerchantAuthentication,
+  validateCustomerPaymentProfileRequest_customerProfileId         :: CustomerProfileId,
+  validateCustomerPaymentProfileRequest_customerPaymentProfileId  :: CustomerPaymentProfileId,
+  validateCustomerPaymentProfileRequest_customerShippingAddressId :: Maybe CustomerShippingAddressId,
+  validateCustomerPaymentProfileRequest_cardCode                  :: Maybe CardCode,
+  validateCustomerPaymentProfileRequest_validationMode            :: ValidationMode
+  } deriving (Eq, Show)
+
+$(deriveXml ''ValidateCustomerPaymentProfileRequest)
+
+data UpdateCustomerPaymentProfileRequest = UpdateCustomerPaymentProfileRequest {
+ updateCustomerPaymentProfileRequest_merchantAuthentication :: MerchantAuthentication,
+ updateCustomerPaymentProfileRequest_customerProfileId      :: CustomerProfileId,
+ updateCustomerPaymentProfileRequest_paymentProfile         :: CustomerPaymentProfileEx,
+ updateCustomerPaymentProfileRequest_validationMode         :: ValidationMode
+  } deriving (Eq, Show)
+
+$(deriveXml ''UpdateCustomerPaymentProfileRequest)
+                                    
+data DeleteCustomerPaymentProfileRequest = DeleteCustomerPaymentProfileRequest {
+  deleteCustomerPaymentProfileRequest_merchantAuthentication   :: MerchantAuthentication,
+  deleteCustomerPaymentProfileRequest_customerProfileId        :: CustomerProfileId,
+  deleteCustomerPaymentProfileRequest_customerPaymentProfileId :: CustomerPaymentProfileId
+  } deriving (Eq, Show)
+
+$(deriveXml ''DeleteCustomerPaymentProfileRequest)
+
+data CreateCustomerProfileFromTransactionRequest = CreateCustomerProfileFromTransactionRequest {
+  createCustomerProfileFromTransactionRequest_merchantAuthentication :: MerchantAuthentication,
+  createCustomerProfileFromTransactionRequest_transId                :: TransactionId,
+  createCustomerProfileFromTransactionRequest_customer               :: Maybe CustomerProfileBase,
+  createCustomerProfileFromTransactionRequest_customerProfileId      :: Maybe CustomerProfileId
+  } deriving (Eq, Show)
+
+$(deriveXml ''CreateCustomerProfileFromTransactionRequest)
+
+data GetHostedProfilePageRequest = GetHostedProfilePageRequest {
+  getHostedProfilePageRequest_merchantAuthentication :: MerchantAuthentication,
+  getHostedProfilePageRequest_refId                  :: Maybe T.Text,
+  getHostedProfilePageRequest_customerProfileId      :: CustomerProfileId,
+  getHostedProfilePageRequest_hostedProfileSettings  :: Maybe ArrayOfSetting
+  } deriving (Eq, Show)
+
+$(deriveXml ''GetHostedProfilePageRequest)
+
+data CreateTransactionRequest = CreateTransactionRequest {
+  createTransactionRequest_merchantAuthentication :: MerchantAuthentication,
+  createTransactionRequest_refId                  :: Maybe T.Text,
+  createTransactionRequest_transactionRequest     :: TransactionRequest
+  } deriving (Eq, Show)
+
+$(deriveXml ''CreateTransactionRequest)

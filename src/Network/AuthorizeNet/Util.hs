@@ -12,7 +12,7 @@ import Text.XML.HaXml.Types
 import Text.ParserCombinators.Poly.Plain
 
 import Network.AuthorizeNet.Instances
-import Network.AuthorizeNet.TH
+import Network.AuthorizeNet.Types
 
 import qualified Data.ByteString.Lazy as BSL
 import qualified Data.Text.Lazy as TL
@@ -34,9 +34,15 @@ runSchemaTypeToXml :: forall a. XmlParsable a => a -> BSL.ByteString
 runSchemaTypeToXml x =
   let name = xmlParsableName x
       cons = children $ head $ schemaTypeToXML name x
-      nsAttr = AttValue [Left "AnetApi/xml/v1/schema/AnetApiSchema.xsd"]
+      nsAttrs Namespace_none = []
+      nsAttrs Namespace_xsd = [(N "xmlns", AttValue [Left "AnetApi/xml/v1/schema/AnetApiSchema.xsd"])]
+      nsAttrs Namespace_full = [
+        (N "xmlns:xsi", AttValue [Left "http://www.w3.org/2001/XMLSchema-instance"]),
+        (N "xmlns:xsd", AttValue [Left "http://www.w3.org/2001/XMLSchema"]),
+        (N "xmlns", AttValue [Left "AnetApi/xml/v1/schema/AnetApiSchema.xsd"])
+        ]
       xmlDecl = XMLDecl "1.0" (Just $ EncodingDecl "utf-8") Nothing
-      doc = document $ Document (Prolog (Just xmlDecl) [] Nothing []) [] (Elem (N name) [(N "xmlns", nsAttr)] cons ) []
+      doc = document $ Document (Prolog (Just xmlDecl) [] Nothing []) [] (Elem (N name) (nsAttrs $ xmlNamespaceLevel x) cons ) []
   in TL.encodeUtf8 $ TL.pack $ render doc
 
 fromXml :: forall a. XmlParsable a => BSL.ByteString -> Either String a

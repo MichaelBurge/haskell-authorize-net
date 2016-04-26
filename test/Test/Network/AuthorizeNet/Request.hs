@@ -190,215 +190,275 @@ test_createCustomerPaymentProfileRequest =
   customerPaymentProfile_taxId = Nothing
   }) Validation_liveMode
   in assertEncodes expected actual
--- apiExpected_getCustomerPaymentProfileRequest :: String
--- apiExpected_getCustomerPaymentProfileRequest = [r|
--- {
---     "getCustomerPaymentProfileRequest": {
---         "merchantAuthentication": {
---             "name": "API_LOGIN_ID",
---             "transactionKey": "API_TRANSACTION_KEY"
---         },
---         "customerProfileId": "10000",
---         "customerPaymentProfileId": "20000"
---     }
--- }
--- |]
 
--- apiActual_getCustomerPaymentProfileRequest :: ApiRequest
--- apiActual_getCustomerPaymentProfileRequest = GetCustomerPaymentProfile testMerchantAuthentication 10000 20000
+test_getCustomerPaymentProfileRequest :: Assertion
+test_getCustomerPaymentProfileRequest =
+  let expected = [r|
+<?xml version="1.0" encoding="utf-8"?>
+<getCustomerPaymentProfileRequest xmlns="AnetApi/xml/v1/schema/AnetApiSchema.xsd">
+  <merchantAuthentication>
+    <name>API_LOGIN_ID</name>
+    <transactionKey>API_TRANSACTION_KEY</transactionKey>
+  </merchantAuthentication>
+  <customerProfileId>10000</customerProfileId>
+  <customerPaymentProfileId>20000</customerPaymentProfileId>
+</getCustomerPaymentProfileRequest>
+|]
+      actual = GetCustomerPaymentProfileRequest testMerchantAuthentication 10000 20000
+  in assertEncodes expected actual
 
--- apiExpected_getCustomerPaymentProfileListRequest :: String
--- apiExpected_getCustomerPaymentProfileListRequest = [r|
--- { 
---          "getCustomerPaymentProfileListRequest": { 
---                  "merchantAuthentication": { 
---                          "name": "API_LOGIN_ID", 
---                          "transactionKey": "API_TRANSACTION_KEY" 
---                  }, 
---                  "searchType": "cardsExpiringInMonth", 
---                  "month": "2020-12", 
---                  "sorting": { 
---                          "orderBy": "id", 
---                          "orderDescending": "false" 
---                  }, 
---                  "paging": { 
---                          "limit": "1000", 
---                          "offset": "1" 
---                  } 
---          } 
---  }
--- |]
+ 
+test_getCustomerPaymentProfileListRequest :: Assertion
+test_getCustomerPaymentProfileListRequest =
+  let expected = [r|
+<?xml version="1.0" encoding="utf-8"?>
+<getCustomerPaymentProfileListRequest xmlns="AnetApi/xml/v1/schema/AnetApiSchema.xsd">
+  <merchantAuthentication>
+    <name>API_LOGIN_ID</name>
+    <transactionKey>API_TRANSACTION_KEY</transactionKey>
+  </merchantAuthentication>
+  <searchType>cardsExpiringInMonth</searchType>
+  <month>2020-12</month>
+  <sorting>
+        <orderBy>id</orderBy>
+    <orderDescending>false</orderDescending>
+  </sorting>
+  <paging>
+    <limit>1000</limit>
+    <offset>1</offset>
+  </paging>
+</getCustomerPaymentProfileListRequest>
+|]
+      searchType = SearchType_cardsExpiringInMonth
+      sorting = CustomerPaymentProfileSorting OrderField_id False
+      paging = Paging 1000 1
+      actual =  GetCustomerPaymentProfileListRequest testMerchantAuthentication searchType "2020-12" sorting paging
+  in assertEncodes expected actual
 
--- apiActual_getCustomerPaymentProfileListRequest :: ApiRequest
--- apiActual_getCustomerPaymentProfileListRequest =
---   let searchType = SearchType_cardsExpiringInMonth
---       sorting = CustomerPaymentProfileSorting OrderField_id False
---       paging = Paging 1000 1
---   in GetCustomerPaymentProfileList testMerchantAuthentication searchType "2020-12" sorting paging
+test_validateCustomerPaymentProfileRequest :: Assertion
+test_validateCustomerPaymentProfileRequest =
+  let expected = [r|
+<?xml version="1.0" encoding="utf-8"?>
+<validateCustomerPaymentProfileRequest xmlns="AnetApi/xml/v1/schema/AnetApiSchema.xsd">
+  <merchantAuthentication>
+    <name>API_LOGIN_ID</name>
+    <transactionKey>API_TRANSACTION_KEY</transactionKey>
+  </merchantAuthentication>
+  <customerProfileId>10000</customerProfileId>
+  <customerPaymentProfileId>20000</customerPaymentProfileId>
+  <validationMode>liveMode</validationMode>
+</validateCustomerPaymentProfileRequest>
+|]
+      actual = ValidateCustomerPaymentProfileRequest testMerchantAuthentication 10000 20000 Nothing Nothing Validation_liveMode
+  in assertEncodes expected actual
 
--- apiExpected_validateCustomerPaymentProfileRequest :: String
--- apiExpected_validateCustomerPaymentProfileRequest = [r|
--- {
---     "validateCustomerPaymentProfileRequest": {
---         "merchantAuthentication": {
---             "name": "API_LOGIN_ID",
---             "transactionKey": "API_TRANSACTION_KEY"
---         },
---         "customerProfileId": "10000",
---         "customerPaymentProfileId": "20000",
---         "validationMode": "liveMode"
---     }
--- }
--- |]
+test_updateCustomerPaymentProfileRequest :: Assertion
+test_updateCustomerPaymentProfileRequest =
+  let expected = [r|
+<?xml version="1.0" encoding="utf-8"?>
+<updateCustomerPaymentProfileRequest xmlns="AnetApi/xml/v1/schema/AnetApiSchema.xsd">
+  <merchantAuthentication>
+    <name>API_LOGIN_ID</name>
+    <transactionKey>API_TRANSACTION_KEY</transactionKey>
+  </merchantAuthentication>
+  <customerProfileId>10000</customerProfileId>
+  <paymentProfile>
+    <billTo>
+      <firstName>John</firstName>
+      <lastName>Doe</lastName>
+      <company></company>
+      <address>123 Main St.</address>
+      <city>Bellevue</city>
+      <state>WA</state>
+      <zip>98004</zip>
+      <country>USA</country>
+      <phoneNumber>000-000-0000</phoneNumber>
+      <faxNumber></faxNumber>
+    </billTo>
+    <payment>
+      <creditCard>
+        <cardNumber>4111111111111111</cardNumber>
+        <expirationDate>2026-01</expirationDate>
+      </creditCard>
+    </payment>
+    <customerPaymentProfileId>20000</customerPaymentProfileId>
+  </paymentProfile>
+  <validationMode>liveMode</validationMode>
+</updateCustomerPaymentProfileRequest>
+|]
+      paymentProfile = CustomerPaymentProfileEx {
+        customerPaymentProfileEx_customerType             = Nothing,
+        customerPaymentProfileEx_billTo                   = Just CustomerAddress {
+            customerAddress_firstName = Just "John",
+            customerAddress_lastName = Just "Doe",
+            customerAddress_company = Just "",
+            customerAddress_address = Just "123 Main St.",
+            customerAddress_city = Just "Bellevue",
+            customerAddress_state = Just "WA",
+            customerAddress_zip = Just "98004",
+            customerAddress_country = Just "USA",
+            customerAddress_phoneNumber = Just "000-000-0000",
+            customerAddress_faxNumber = Just "",
+            customerAddress_email = Nothing
+            },
+        customerPaymentProfileEx_payment                  = Just $ Payment_creditCard $ CreditCard {
+            creditCard_cardNumber = "4111111111111111",
+            creditCard_expirationDate = "2026-01",
+            creditCard_cardCode = Nothing,
+            creditCard_isPaymentToken = Nothing,
+            creditCard_cryptogram = Nothing
+            },
+        customerPaymentProfileEx_driversLicense           = Nothing,
+        customerPaymentProfileEx_taxId                    = Nothing,
+        customerPaymentProfileEx_customerPaymentProfileId = Just 20000
+        }
+      actual = UpdateCustomerPaymentProfileRequest testMerchantAuthentication 10000 paymentProfile Validation_liveMode
+  in assertEncodes expected actual
 
--- apiActual_validateCustomerPaymentProfileRequest :: ApiRequest
--- apiActual_validateCustomerPaymentProfileRequest = ValidateCustomerPaymentProfile testMerchantAuthentication 10000 20000 Nothing Nothing Validation_liveMode
+test_deleteCustomerPaymentProfileRequest :: Assertion
+test_deleteCustomerPaymentProfileRequest =
+  let expected = [r|
+<?xml version="1.0" encoding="utf-8"?>
+<deleteCustomerPaymentProfileRequest xmlns="AnetApi/xml/v1/schema/AnetApiSchema.xsd">
+  <merchantAuthentication>
+    <name>API_LOGIN_ID</name>
+    <transactionKey>API_TRANSACTION_KEY</transactionKey>
+  </merchantAuthentication>
+  <customerProfileId>10000</customerProfileId>
+  <customerPaymentProfileId>20000</customerPaymentProfileId>
+</deleteCustomerPaymentProfileRequest>
+|]
+      actual = DeleteCustomerPaymentProfileRequest testMerchantAuthentication 10000 20000
+  in assertEncodes expected actual
 
--- apiExpected_updateCustomerPaymentProfileRequest :: String
--- apiExpected_updateCustomerPaymentProfileRequest = [r|
--- {
---     "updateCustomerPaymentProfileRequest": {
---         "merchantAuthentication": {
---             "name": "API_LOGIN_ID",
---             "transactionKey": "API_TRANSACTION_KEY"
---         },
---         "customerProfileId": "10000",
---         "paymentProfile": {
---             "billTo": {
---                 "firstName": "John",
---                 "lastName": "Doe",
---                 "company": "",
---                 "address": "123 Main St.",
---                 "city": "Bellevue",
---                 "state": "WA",
---                 "zip": "98004",
---                 "country": "USA",
---                 "phoneNumber": "000-000-0000",
---                 "faxNumber": ""
---             },
---             "payment": {
---                 "creditCard": {
---                     "cardNumber": "4111111111111111",
---                     "expirationDate": "2026-01"
---                 }
---             },
---             "customerPaymentProfileId": "20000"
---         },
---         "validationMode": "liveMode"
---     }
--- }
--- |]
+test_getHostedProfilePageRequest :: Assertion
+test_getHostedProfilePageRequest =
+  let expected = [r|
+<?xml version="1.0" encoding="utf-8"?>
+<getHostedProfilePageRequest xmlns="AnetApi/xml/v1/schema/AnetApiSchema.xsd">
+  <merchantAuthentication>
+    <name>API_LOGIN_ID</name>
+    <transactionKey>API_TRANSACTION_KEY</transactionKey>
+  </merchantAuthentication>
+  <customerProfileId>123456</customerProfileId>
+  <hostedProfileSettings>
+    <setting>
+      <settingName>hostedProfileReturnUrl</settingName>
+      <settingValue>https://returnurl.com/return/</settingValue>
+    </setting>
+    <setting>
+      <settingName>hostedProfileReturnUrlText</settingName>
+      <settingValue>Continue to confirmation page.</settingValue>
+    </setting>
+          <setting>
+                <settingName>hostedProfilePageBorderVisible</settingName>
+                 <settingValue>true</settingValue>
+          </setting>
+ </hostedProfileSettings>
+</getHostedProfilePageRequest>
+|]
+      actual = GetHostedProfilePageRequest testMerchantAuthentication Nothing 123456 $ Just $ ArrayOfSetting $ ArrayOf [
+        Setting SettingName_hostedProfileReturnUrl "https://returnurl.com/return/",
+        Setting SettingName_hostedProfileReturnUrlText "Continue to confirmation page.",
+        Setting SettingName_hostedProfilePageBorderVisible "true"
+        ]
+  in assertEncodes expected actual
 
--- apiActual_updateCustomerPaymentProfileRequest :: ApiRequest
--- apiActual_updateCustomerPaymentProfileRequest =
---   let paymentProfile = CustomerPaymentProfileEx {
---         customerPaymentProfileEx_customerType             = Nothing,
---         customerPaymentProfileEx_billTo                   = Just CustomerAddress {
---             customerAddress_firstName = Just "John",
---             customerAddress_lastName = Just "Doe",
---             customerAddress_company = Just "",
---             customerAddress_address = Just "123 Main St.",
---             customerAddress_city = Just "Bellevue",
---             customerAddress_state = Just "WA",
---             customerAddress_zip = Just "98004",
---             customerAddress_country = Just "USA",
---             customerAddress_phoneNumber = Just "000-000-0000",
---             customerAddress_faxNumber = Just "",
---             customerAddress_email = Nothing
---             },
---         customerPaymentProfileEx_payment                  = Just $ Payment_creditCard $ CreditCard {
---             creditCard_cardNumber = "4111111111111111",
---             creditCard_expirationDate = "2026-01",
---             creditCard_cardCode = Nothing,
---             creditCard_isPaymentToken = Nothing,
---             creditCard_cryptogram = Nothing
---             },
---         customerPaymentProfileEx_driversLicense           = Nothing,
---         customerPaymentProfileEx_taxId                    = Nothing,
---         customerPaymentProfileEx_customerPaymentProfileId = Just 20000
---         }
---   in UpdateCustomerPaymentProfile testMerchantAuthentication 10000 paymentProfile Validation_liveMode
 
--- apiExpected_deleteCustomerPaymentProfileRequest :: String
--- apiExpected_deleteCustomerPaymentProfileRequest = [r|
--- {
---     "deleteCustomerPaymentProfileRequest": {
---         "merchantAuthentication": {
---             "name": "API_LOGIN_ID",
---             "transactionKey": "API_TRANSACTION_KEY"
---         },
---         "customerProfileId": "10000",
---         "customerPaymentProfileId": "20000"
---     }
--- }
--- |]
+test_createCustomerProfileFromTransactionRequest :: Assertion
+test_createCustomerProfileFromTransactionRequest =
+  let expected = [r|
+<?xml version="1.0" encoding="utf-8"?>
+<createCustomerProfileFromTransactionRequest xmlns="AnetApi/xml/v1/schema/AnetApiSchema.xsd">
+        <merchantAuthentication>
+                <name>API_LOGIN_ID</name>
+                <transactionKey>API_TRANSACTION_KEY</transactionKey>
+        </merchantAuthentication>
+        <transId>122</transId>
+</createCustomerProfileFromTransactionRequest>                   
+|]
+      actual = CreateCustomerProfileFromTransactionRequest testMerchantAuthentication 122 Nothing Nothing
+  in assertEncodes expected actual
 
--- apiActual_deleteCustomerPaymentProfileRequest :: ApiRequest
--- apiActual_deleteCustomerPaymentProfileRequest = DeleteCustomerPaymentProfile testMerchantAuthentication 10000 20000
-
--- apiExpected_createCustomerProfileFromTransactionRequest :: String
--- apiExpected_createCustomerProfileFromTransactionRequest = [r|
--- {
---     "createCustomerProfileFromTransactionRequest": {
---         "merchantAuthentication": {
---             "name": "API_LOGIN_ID",
---             "transactionKey": "API_TRANSACTION_KEY"
---         },
---         "transId": "122"
---     }
--- }
--- |]
-
--- apiActual_createCustomerProfileFromTransactionRequest :: ApiRequest
--- apiActual_createCustomerProfileFromTransactionRequest = CreateCustomerProfileFromTransaction testMerchantAuthentication 122 Nothing Nothing
-
--- apiExpected_chargeCustomerProfileRequest :: String
--- apiExpected_chargeCustomerProfileRequest = [r|
--- {
---     "createTransactionRequest": {
---         "merchantAuthentication": {
---             "name": "API_LOGIN_ID",
---             "transactionKey": "API_TRANSACTION_KEY"
---         },
---         "refId": "123456",
---         "transactionRequest": {
---             "transactionType": "authCaptureTransaction",
---             "amount": "45",
---               "profile": {
---                         "customerProfileId": "27388924",
---                         "paymentProfile": { "paymentProfileId": "25000332" }
---                         },
---             "lineItems": {
---                 "lineItem": {
---                     "itemId": "1",
---                     "name": "vase",
---                     "description": "Cannes logo",
---                     "quantity": "18",
---                     "unitPrice": "45.00"
---                 }
---             }
---         }
---     }
--- }
--- |]
-
--- apiActual_chargeCustomerProfileRequest :: ApiRequest
--- apiActual_chargeCustomerProfileRequest =
---   let transactionRequest = (mkTransactionRequest Transaction_authCaptureTransaction "45") {
---         transactionRequest_profile = Just $ mkCustomerProfilePayment {
---             customerProfilePayment_customerProfileId = Just 27388924,
---             customerProfilePayment_paymentProfile = Just $ PaymentProfile 25000332 Nothing
---             },
---         transactionRequest_lineItems = Just $ LineItems $ ArrayOf $ [ LineItem {
---             lineItem_itemId = "1",
---             lineItem_name = "vase",
---             lineItem_description = Just "Cannes logo",
---             lineItem_quantity = "18",
---             lineItem_unitPrice = "45.00",
---             lineItem_taxable = Nothing
---             } ]
---         }
---   in CreateTransaction testMerchantAuthentication (Just "123456") transactionRequest
+test_chargeCustomerProfileRequest :: Assertion
+test_chargeCustomerProfileRequest =
+  let expected = [r|
+<?xml version="1.0" encoding="utf-8"?>
+<createTransactionRequest xmlns="AnetApi/xml/v1/schema/AnetApiSchema.xsd">
+  <merchantAuthentication>
+    <name>API_LOGIN_ID</name>
+    <transactionKey>API_TRANSACTION_KEY</transactionKey>
+  </merchantAuthentication>
+  <refId>123456</refId>
+  <transactionRequest>
+    <transactionType>authCaptureTransaction</transactionType>
+    <amount>5</amount>
+    <profile>
+      <customerProfileId>27388924</customerProfileId>
+      <paymentProfile>
+        <paymentProfileId>25000332</paymentProfileId>
+      </paymentProfile>
+    </profile>
+    <order>
+      <invoiceNumber>INV-12345</invoiceNumber>
+      <description>Product Description</description>
+    </order>
+    <lineItems>
+      <lineItem>
+        <itemId>1</itemId>
+        <name>vase</name>
+        <description>Cannes logo </description>
+        <quantity>18</quantity>
+        <unitPrice>45.00</unitPrice>
+      </lineItem>
+    </lineItems>
+    <poNumber>456654</poNumber>
+    <shipTo>
+      <firstName>China</firstName>
+      <lastName>Bayles</lastName>
+      <company>Thyme for Tea</company>
+      <address>12 Main Street</address>
+      <city>Pecan Springs</city>
+      <state>TX</state>
+      <zip>44628</zip>
+      <country>USA</country>
+    </shipTo>
+    <customerIP>192.168.1.1</customerIP>
+  </transactionRequest>
+</createTransactionRequest>                   
+|]
+      transactionRequest = (mkTransactionRequest Transaction_authCaptureTransaction "5") {
+        transactionRequest_profile = Just $ mkCustomerProfilePayment {
+            customerProfilePayment_customerProfileId = Just 27388924,
+            customerProfilePayment_paymentProfile = Just $ PaymentProfile 25000332 Nothing
+            },
+        transactionRequest_order = Just $ Order (Just "INV-12345") (Just "Product Description"),
+        transactionRequest_lineItems = Just $ LineItems $ ArrayOf $ [ LineItem {
+            lineItem_itemId = "1",
+            lineItem_name = "vase",
+            lineItem_description = Just "Cannes logo ",
+            lineItem_quantity = "18",
+            lineItem_unitPrice = "45.00",
+            lineItem_taxable = Nothing
+            } ],
+        transactionRequest_poNumber = Just "456654",
+        transactionRequest_shipTo = Just CustomerAddress {
+            customerAddress_firstName = Just "China",
+            customerAddress_lastName = Just "Bayles",
+            customerAddress_company = Just "Thyme for Tea",
+            customerAddress_address = Just "12 Main Street",
+            customerAddress_city = Just "Pecan Springs",
+            customerAddress_state = Just "TX",
+            customerAddress_zip = Just "44628",
+            customerAddress_country = Just "USA",
+            customerAddress_phoneNumber = Nothing,
+            customerAddress_faxNumber = Nothing,
+            customerAddress_email = Nothing
+            },
+          transactionRequest_customerIP = Just "192.168.1.1"
+        }
+      actual = CreateTransactionRequest testMerchantAuthentication (Just "123456") transactionRequest
+  in assertEncodes expected actual
 
 -- test_getHostedProfilePageRequest =
 --   let text = [r|
@@ -428,11 +488,7 @@ test_createCustomerPaymentProfileRequest =
 --     }
 -- }               
 -- |]
---       request = GetHostedProfilePage testMerchantAuthentication Nothing 123456 $ Just $ ArrayOfSetting $ ArrayOf [
---         Setting SettingName_hostedProfileReturnUrl "https://returnurl.com/return/",
---         Setting SettingName_hostedProfileReturnUrlText "Continue to confirmation page.",
---         Setting SettingName_hostedProfilePageBorderVisible "true"
---         ]
+--       request = 
 --   in assertEncodes text request
 
 requestTests :: TestTree
@@ -443,12 +499,12 @@ requestTests = testGroup "API Requests Encode and Decode to JSON correctly" [
   testCase "getCustomerProfileIdsRequest" test_getCustomerProfileIdsRequest, 
   testCase "updateCustomerProfileRequest" test_updateCustomerProfileRequest,
   testCase "deleteCustomerProfileRequest" test_deleteCustomerProfileRequest,
-  testCase "createCustomerPaymentProfileRequest" test_createCustomerPaymentProfileRequest
-  -- testCase "getCustomerPaymentProfileRequest" $ assertEncodes apiExpected_getCustomerPaymentProfileRequest apiActual_getCustomerPaymentProfileRequest,
-  -- testCase "validateCustomerPaymentProfileRequest" $ assertEncodes apiExpected_validateCustomerPaymentProfileRequest apiActual_validateCustomerPaymentProfileRequest,
-  -- testCase "updateCustomerPaymentProfile" $ assertEncodes apiExpected_updateCustomerPaymentProfileRequest apiActual_updateCustomerPaymentProfileRequest,
-  -- testCase "deleteCustomerPaymentProfile" $ assertEncodes apiExpected_deleteCustomerPaymentProfileRequest apiActual_deleteCustomerPaymentProfileRequest,
-  -- testCase "createCustomerProfileFromTransaction" $ assertEncodes apiExpected_createCustomerProfileFromTransactionRequest apiActual_createCustomerProfileFromTransactionRequest,
-  -- testCase "getHostedProfilePageRequest" test_getHostedProfilePageRequest,
-  -- testCase "chargeCustomerProfile" $ assertEncodes apiExpected_chargeCustomerProfileRequest apiActual_chargeCustomerProfileRequest
+  testCase "createCustomerPaymentProfileRequest" test_createCustomerPaymentProfileRequest,
+  testCase "getCustomerPaymentProfileRequest" test_getCustomerPaymentProfileRequest,
+  testCase "validateCustomerPaymentProfileRequest" test_validateCustomerPaymentProfileRequest,
+  testCase "updateCustomerPaymentProfile" test_updateCustomerPaymentProfileRequest,
+  testCase "deleteCustomerPaymentProfile" test_deleteCustomerPaymentProfileRequest,
+  testCase "getHostedProfilePageRequest" test_getHostedProfilePageRequest,
+  testCase "createCustomerProfileFromTransaction" test_createCustomerProfileFromTransactionRequest,
+  testCase "chargeCustomerProfile" test_chargeCustomerProfileRequest
   ]

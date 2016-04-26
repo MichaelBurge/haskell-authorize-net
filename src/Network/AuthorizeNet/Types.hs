@@ -1,8 +1,10 @@
-{-# LANGUAGE EmptyDataDecls, GADTs, StandaloneDeriving, OverloadedStrings, MultiParamTypeClasses, ScopedTypeVariables, TypeFamilies, FlexibleContexts, TemplateHaskell, GeneralizedNewtypeDeriving, DeriveFoldable, OverloadedLists, DeriveGeneric #-}
+{-# LANGUAGE EmptyDataDecls, GADTs, StandaloneDeriving, OverloadedStrings, MultiParamTypeClasses, ScopedTypeVariables, TypeFamilies, FlexibleContexts, TemplateHaskell, GeneralizedNewtypeDeriving, DeriveFoldable, OverloadedLists #-}
 
 -- | Implements the Authorize.NET JSON API. Types generally correspond to those defined in the XSD.
 -- | XSD location: https://api.authorize.net/xml/v1/schema/AnetApiSchema.xsd
-module Network.AuthorizeNet.Types where
+module Network.AuthorizeNet.Types (
+  module Network.AuthorizeNet.Types
+  ) where
 
 import Control.Applicative
 import Control.Lens ((^.))
@@ -18,7 +20,6 @@ import Data.Maybe
 import Data.Monoid
 import Data.Proxy
 import Data.String
-import GHC.Generics
 import GHC.Exts
 import Network.Wreq hiding (Proxy)
 import Text.XML.HaXml.Schema.Schema (SchemaType(..), SimpleType(..), Extension(..), Restricts(..))
@@ -28,12 +29,23 @@ import qualified Data.Text    as T
 import qualified Data.Text.IO as T
 import qualified Data.Text.Read as T
 
-import Network.AuthorizeNet.Instances
-import Network.AuthorizeNet.TH
+-- | These let you control exactly what shows in the XML header information
+data XmlNamespaceLevel = Namespace_none
+                       | Namespace_xsd
+                       | Namespace_full
+                       deriving (Eq, Show)
+
+class SchemaType a => XmlParsable a where
+  xmlParsableName :: a -> String
+  xmlNamespaceLevel :: a -> XmlNamespaceLevel
+  
 
 class XmlParsable a => ApiRequest a where
   type ResponseType a
 
+class XmlParsable a => ApiResponse a where
+  type RequestType a
+  aNetApiResponse :: a -> ANetApiResponse
 
 -- | Information about the Authorize.NET API's endpoint. See 'API Endpoints' at http://developer.authorize.net/api/reference/index.html
 -- | If you had a mock of their API set up somewhere for unit tests, you would use it by creating a value of this type.
@@ -43,24 +55,16 @@ data ApiConfig = ApiConfig {
   apiConfig_hostedProfileUrl :: T.Text
   } deriving (Show)
 
-
 newtype NumericString = NumericString Int deriving (Eq, Ord, Show, Num)
 --newtype Decimal = Decimal T.Text deriving (Eq, Show, IsString, ToJSON, FromJSON)
 newtype Decimal = Decimal T.Text deriving (Eq, Show, IsString)
+
 -- | Some Authorize.NET services in their JSON represent a single element as a single-element list, and others use an object. This type normalizes them into a list.
 data ArrayOf a = ArrayOf [a] deriving (Eq, Show, Foldable)
 
 instance SchemaType a => SchemaType (ArrayOf a) where
   parseSchemaType s = return ArrayOf `apply` many (parseSchemaType s)
   schemaTypeToXML s (ArrayOf xs) = concatMap (schemaTypeToXML s) xs
-
--- instance FromJSON a => FromJSON (ArrayOf a) where
---   parseJSON value = case value of
---     Array _ -> ArrayOf <$> parseJSON value
---     _ -> ArrayOf <$> pure <$> parseJSON value
-
--- instance ToJSON a => ToJSON (ArrayOf a) where
---   toJSON (ArrayOf xs) = toJSON xs
 
 instance IsList (ArrayOf a) where
   type Item (ArrayOf a) = a
@@ -77,19 +81,6 @@ type TransactionId = NumericString
 type TaxId = T.Text
 
 type CardCode = NumericString
-
-$(deriveXml ''NumericString)
-
--- instance FromJSON NumericString where
---   parseJSON = withText "numericString" $ \t ->
---     case T.decimal t of
---       Left e -> fail e
---       Right (x, "") -> return $ NumericString x
---       Right (x, remainder) -> fail $ T.unpack $ "Additional text found: " <> remainder
-
--- instance ToJSON NumericString where
---   toJSON (NumericString x) = String $ T.pack $ show x
-
 -- | Holds API credentials for Authorize.NET. You should get these when you sign up for a sandbox or production account.
 -- | This and 'ApiConfig' are required for every request.
 data MerchantAuthentication = MerchantAuthentication {
@@ -100,22 +91,10 @@ data MerchantAuthentication = MerchantAuthentication {
 instance Show MerchantAuthentication where
   show x = "MerchantAuthentication { merchantAuthentication_name = \"REDACTED\", merchantAuthentication_transactionKey = \"REDACTED\" }"
 
-$(deriveXml ''MerchantAuthentication)
-
--- instance ToJSON MerchantAuthentication where
---   toEncoding = genericToEncoding dropRecordName
-
--- instance FromJSON MerchantAuthentication where
---   parseJSON value =
---     let objectParse o = MerchantAuthentication <$> o .: "name" <*> o .: "transactionKey"
---     in withObject "MerchantAuthentication" objectParse value
-
 -- | anet:customerTypeEnum
 data CustomerType = CustomerType_individual
                   | CustomerType_business
                   deriving (Eq, Show)
-
-$(deriveXml ''CustomerType)
 
 -- | anet:nameAndAddressType
 data NameAndAddress = NameAndAddress {
@@ -129,12 +108,6 @@ data NameAndAddress = NameAndAddress {
   nameAddress_country     :: T.Text
   } deriving (Eq, Show)
 
--- instance ToJSON NameAndAddress where
---   toEncoding = genericToEncoding dropRecordName
-
--- instance FromJSON NameAndAddress where
---   parseJSON = genericParseJSON dropRecordName
-
 -- | anet:cardArt
 data CardArt = CardArt {
   cardArt_cardBrand       :: Maybe T.Text,
@@ -144,12 +117,6 @@ data CardArt = CardArt {
   cardArt_cardType        :: Maybe T.Text
   } deriving (Eq, Show)
 
--- instance ToJSON CardArt where
---   toEncoding = genericToEncoding dropRecordName
-
--- instance FromJSON CardArt where
---   parseJSON = genericParseJSON dropRecordName
-               
 data CreditCard = CreditCard {
   -- Extension fields from anet:creditCardSimpleType
   creditCard_cardNumber     :: T.Text,
@@ -160,9 +127,6 @@ data CreditCard = CreditCard {
   creditCard_cryptogram     :: Maybe T.Text
   } deriving (Eq, Show)
 
-$(deriveXml ''CreditCard)
-
-
 mkCreditCard :: T.Text -> T.Text -> Maybe CardCode -> CreditCard
 mkCreditCard cardNumber expirationDate cardCode = CreditCard cardNumber expirationDate cardCode Nothing Nothing
 
@@ -172,13 +136,6 @@ data CreditCardMasked = CreditCardMasked {
   creditCardMasked_cardType       :: Maybe T.Text,
   creditCardMasked_cardArt        :: Maybe CardArt
   } deriving (Eq, Show)
-
--- instance ToJSON CreditCardMasked where
---   toEncoding = genericToEncoding dropRecordName
-
--- instance FromJSON CreditCardMasked where
---   parseJSON = genericParseJSON dropRecordName
-
 
 mkCreditCardMasked :: T.Text -> T.Text -> CreditCardMasked
 mkCreditCardMasked cardNumber expirationDate = CreditCardMasked cardNumber expirationDate Nothing Nothing
@@ -198,8 +155,6 @@ data CustomerAddress = CustomerAddress {
   customerAddress_email       :: Maybe T.Text
   } deriving (Eq, Show)
 
-$(deriveXml ''CustomerAddress)
-
 mkCustomerAddress :: CustomerAddress
 mkCustomerAddress = CustomerAddress Nothing Nothing Nothing Nothing Nothing Nothing Nothing Nothing Nothing Nothing Nothing
 
@@ -210,13 +165,9 @@ data DriversLicense = DriversLicense {
   driversLicense_dateOfBirth :: T.Text
   } deriving (Eq, Show)
 
-$(deriveXml ''DriversLicense)
-
 data BankAccountType = BankAccountType_Individual
                      | BankAccountType_Business
                      deriving (Eq, Show)
-
-$(deriveXml ''BankAccountType)
 
 -- | anet:echeckTypeEnum
 data EcheckType = Echeck_PPD
@@ -226,8 +177,6 @@ data EcheckType = Echeck_PPD
                 | Echeck_ARC
                 | Echeck_BOC
                 deriving (Eq, Show)
-
-$(deriveXml ''EcheckType)
 
 -- | anet:transactionTypeEnum
 data TransactionType = Transaction_authOnlyTransaction
@@ -241,11 +190,6 @@ data TransactionType = Transaction_authOnlyTransaction
                      | Transaction_authCaptureContinueTransaction
                      deriving (Eq, Show)
 
--- instance ToJSON TransactionType where
---   toEncoding = genericToEncoding enumType
--- instance FromJSON TransactionType where
---   parseJSON = genericParseJSON enumType                              
-
 -- | anet:bankAccountType
 data BankAccount = BankAccount {
   bankAccount_accountType   :: Maybe BankAccountType,
@@ -257,8 +201,6 @@ data BankAccount = BankAccount {
   bankAccount_checkNumber   :: Maybe T.Text
   } deriving (Eq, Show)
 
-$(deriveXml ''BankAccount)
-
 -- | anet:bankAccountMaskedType
 data BankAccountMasked = BankAccountMasked {
   bankAccountMasked_accountType   :: Maybe BankAccountType,
@@ -269,39 +211,24 @@ data BankAccountMasked = BankAccountMasked {
   bankAccountMasked_bankName      :: Maybe T.Text
   } deriving (Eq, Show)
 
--- instance ToJSON BankAccountMasked where
---   toEncoding = genericToEncoding dropRecordName
--- instance FromJSON BankAccountMasked where
---   parseJSON = genericParseJSON dropRecordName
-
 -- | anet:creditCardTrackType
 data CreditCardTrack = CreditCardTrack {
   creditCardTrack_track1   :: Maybe T.Text,
   creditCardTrack_track2   :: Maybe T.Text,
   creditCardTrack_cardCode :: Maybe CardCode
   } deriving (Eq, Show)
-
-$(deriveXml ''CreditCardTrack)
                        
 -- | anet:encryptedTrackDataType
 data EncryptedTrackData = EncryptedTrackData_dummy deriving (Eq, Show)
 
-$(deriveXml ''EncryptedTrackData)
-
 -- | anet:payPalType
 data PayPal = PayPal_dummy deriving (Eq, Show)
-
-$(deriveXml ''PayPal)
 
 -- | anet:opaqueDataType
 data OpaqueData = OpaqueData_dummy  deriving (Eq, Show)
 
-$(deriveXml ''OpaqueData)
-
 -- | anet:paymentEmvType
 data PaymentEmv = PaymentEmv_dummy deriving (Eq, Show)
-
-$(deriveXml ''PaymentEmv)
 
 -- | anet:paymentType
 data Payment = Payment_creditCard CreditCard
@@ -313,8 +240,6 @@ data Payment = Payment_creditCard CreditCard
              | Payment_emv PaymentEmv
              deriving (Eq, Show)
 
-$(deriveXml ''Payment)
-
 -- | anet:tokenMaskedType
 data TokenMasked = TokenMasked {
   tokenMasked_tokenSource    :: Maybe T.Text,
@@ -322,34 +247,17 @@ data TokenMasked = TokenMasked {
   tokenMasked_expirationDate :: T.Text
   } deriving (Eq, Show)
 
--- instance ToJSON TokenMasked where
---   toEncoding = genericToEncoding dropRecordName
--- instance FromJSON TokenMasked where
---   parseJSON = genericParseJSON dropRecordName
-
 -- | anet:paymentMaskedType
-
 data PaymentMasked = PaymentMasked_creditCard CreditCardMasked
                    | PaymentMasked_bankAccount BankAccountMasked
                    | PaymentMasked_tokenInformation TokenMasked
                    deriving (Eq, Show)
-
--- instance ToJSON PaymentMasked where
---   toEncoding = genericToEncoding choiceType
--- instance FromJSON PaymentMasked where
---   parseJSON = genericParseJSON choiceType                       
-    
 
 -- | anet:paymentProfile
 data PaymentProfile = PaymentProfile {
   paymentProfile_paymentProfileId :: NumericString,
   paymentProfile_cardCode         :: Maybe CardCode
   } deriving (Eq, Show)
-
--- instance ToJSON PaymentProfile where
---   toEncoding = genericToEncoding dropRecordName
--- instance FromJSON PaymentProfile where
---   parseJSON = genericParseJSON dropRecordName
                       
 -- | anet:customerPaymentProfileType
 data CustomerPaymentProfile = CustomerPaymentProfile {
@@ -359,8 +267,6 @@ data CustomerPaymentProfile = CustomerPaymentProfile {
   customerPaymentProfile_driversLicense :: Maybe DriversLicense,
   customerPaymentProfile_taxId          :: Maybe TaxId
   } deriving (Eq, Show)
-
-$(deriveXml ''CustomerPaymentProfile)
 
 mkCustomerPaymentProfile :: CustomerPaymentProfile
 mkCustomerPaymentProfile = CustomerPaymentProfile Nothing Nothing Nothing Nothing Nothing
@@ -375,11 +281,6 @@ data CustomerPaymentProfileEx = CustomerPaymentProfileEx {
   customerPaymentProfileEx_customerPaymentProfileId :: Maybe CustomerPaymentProfileId
   } deriving (Eq, Show)
 
--- instance ToJSON CustomerPaymentProfileEx where
---   toEncoding = genericToEncoding dropRecordName
--- instance FromJSON CustomerPaymentProfileEx where
---   parseJSON = genericParseJSON dropRecordName
-
 -- | anet:customerPaymentProfileMaskedType
 data CustomerPaymentProfileMasked = CustomerPaymentProfileMasked {
   customerPaymentProfileMasked_customerProfileId        :: Maybe CustomerProfileId,
@@ -387,28 +288,13 @@ data CustomerPaymentProfileMasked = CustomerPaymentProfileMasked {
   customerPaymentProfileMasked_payment                  :: Maybe PaymentMasked,
   customerPaymentProfileMasked_driversLicense           :: Maybe DriversLicense,
   customerPaymentProfileMasked_taxId                    :: Maybe TaxId,
-  customerPaymentProfileMasked_subscriptionIds          :: Maybe [SubscriptionId]
+  customerPaymentProfileMasked_subscriptionIds          :: Maybe (ArrayOf SubscriptionId)
   } deriving (Eq, Show)
-                                    
--- instance ToJSON CustomerPaymentProfileMasked where
---   toEncoding = genericToEncoding dropRecordName
--- instance FromJSON CustomerPaymentProfileMasked where
---   parseJSON = genericParseJSON dropRecordName
 
 -- | anet:CustomerPaymentProfileSearchTypeEnum
 data CustomerPaymentProfileSearchType = SearchType_cardsExpiringInMonth deriving (Eq, Show)
 
--- instance ToJSON CustomerPaymentProfileSearchType where
---   toEncoding = genericToEncoding enumType
--- instance FromJSON CustomerPaymentProfileSearchType where
---   parseJSON = genericParseJSON enumType
-
 data CustomerPaymentProfileOrderFieldEnum = OrderField_id deriving (Eq, Show)
-
--- instance ToJSON CustomerPaymentProfileOrderFieldEnum where
---   toEncoding = genericToEncoding enumType
--- instance FromJSON CustomerPaymentProfileOrderFieldEnum where
---   parseJSON = genericParseJSON enumType
 
 -- | anet:CustomerPaymentProfileSorting
 data CustomerPaymentProfileSorting = CustomerPaymentProfileSorting {
@@ -416,21 +302,11 @@ data CustomerPaymentProfileSorting = CustomerPaymentProfileSorting {
   customerPaymentProfileSorting_orderDescending :: Bool
   } deriving (Eq, Show)
 
--- instance ToJSON CustomerPaymentProfileSorting where
---   toEncoding = genericToEncoding dropRecordName
--- instance FromJSON CustomerPaymentProfileSorting where
---   parseJSON = genericParseJSON dropRecordName
-
 -- | anet:Paging
 data Paging = Paging {
   paging_limit :: NumericString,
   paging_offset :: NumericString
   } deriving (Eq, Show)
-
--- instance ToJSON Paging where
---   toEncoding = genericToEncoding dropRecordName
--- instance FromJSON Paging where
---   parseJSON = genericParseJSON dropRecordName
 
 -- | anet:customerPaymentProfileListItemType
 data CustomerPaymentProfileListItem = CustomerPaymentProfileListItem {
@@ -439,22 +315,11 @@ data CustomerPaymentProfileListItem = CustomerPaymentProfileListItem {
   customerPaymentProfileListItem_billTo                   :: CustomerAddress,
   customerPaymentProfileListItem_payment                  :: PaymentMasked
   } deriving (Eq, Show)
-                                      
--- instance ToJSON CustomerPaymentProfileListItem where
---   toEncoding = genericToEncoding dropRecordName
--- instance FromJSON CustomerPaymentProfileListItem where
---   parseJSON = genericParseJSON         
-    
 
 -- | anet:arrayOfCustomerPaymentProfileListItemType
 data ArrayOfCustomerPaymentProfileListItem = ArrayOfCustomerPaymentProfileListItem {
   arrayOfCustomerPaymentProfileListIitem_paymentProfile :: ArrayOf CustomerPaymentProfileListItem
   } deriving (Eq, Show)
-
--- instance ToJSON ArrayOfCustomerPaymentProfileListItem where
---   toEncoding = genericToEncoding dropRecordName
--- instance FromJSON ArrayOfCustomerPaymentProfileListItem where
---   parseJSON = genericParseJSON dropRecordName
 
 -- | anet:customerProfileBaseType
 data CustomerProfileBase = CustomerProfileBase {
@@ -463,11 +328,6 @@ data CustomerProfileBase = CustomerProfileBase {
   customerProfileBase_email              :: Maybe T.Text
   } deriving (Eq, Show)
 
--- instance ToJSON CustomerProfileBase where
---   toEncoding = genericToEncoding dropRecordName
--- instance FromJSON CustomerProfileBase where
---   parseJSON = genericParseJSON                          
-  
 -- | anet:customerProfileType
 -- | Contains a 'Maybe' 'PaymentProfile' and 'Maybe' 'CustomerAddress' instead of an unbounded list of these due to JSON not supporting duplicate keys.
 data CustomerProfile = CustomerProfile {
@@ -478,8 +338,6 @@ data CustomerProfile = CustomerProfile {
   customerProfile_shipTos            :: Maybe CustomerAddress
   } deriving (Eq, Show)
 
-$(deriveXml ''CustomerProfile)
-
 -- | anet:customerProfileExType
 data CustomerProfileEx = CustomerProfileEx {
   customerProfileEx_merchantCustomerId :: T.Text,
@@ -487,8 +345,6 @@ data CustomerProfileEx = CustomerProfileEx {
   customerProfileEx_email              :: T.Text,
   customerProfileEx_customerProfileId  :: Maybe CustomerProfileId
   } deriving (Eq, Show)
-
-$(deriveXml ''CustomerProfileEx)
 
 -- | anet:customerAddressExType
 data CustomerAddressEx = CustomerAddressEx {
@@ -508,8 +364,6 @@ data CustomerAddressEx = CustomerAddressEx {
   customerAddressEx_customerAddressId :: Maybe CustomerAddressId
   } deriving (Eq, Show)
 
-$(deriveXml ''CustomerAddressEx)
-
 -- | anet:customerProfileMaskedType
 data CustomerProfileMasked = CustomerProfileMasked {
   customerProfileMasked_merchantCustomerId :: Maybe T.Text,
@@ -518,14 +372,9 @@ data CustomerProfileMasked = CustomerProfileMasked {
   
   customerProfileMasked_customerProfileId  :: Maybe NumericString,
   
-  customerProfileMasked_paymentProfiles :: [CustomerPaymentProfileMasked],
+  customerProfileMasked_paymentProfiles :: ArrayOf CustomerPaymentProfileMasked,
   customerProfileMasked_shipToList      :: Maybe CustomerAddressEx
   } deriving (Eq, Show)
-
--- instance ToJSON CustomerProfileMasked where
---   toEncoding = genericToEncoding dropRecordName
--- instance FromJSON CustomerProfileMasked where
---   parseJSON = genericParseJSON dropRecordName
 
 data ValidationMode = Validation_none
                     | Validation_testMode
@@ -534,8 +383,6 @@ data ValidationMode = Validation_none
                     | Validation_oldLiveMode
                     deriving (Eq, Show)
 
-$(deriveXml ''ValidationMode)
-
 -- | anet:customerProfilePaymentType
 data CustomerProfilePayment = CustomerProfilePayment {
   customerProfilePayment_createProfile     :: Maybe Bool,
@@ -543,11 +390,6 @@ data CustomerProfilePayment = CustomerProfilePayment {
   customerProfilePayment_paymentProfile    :: Maybe PaymentProfile,
   customerProfilePayment_shippingProfileId :: Maybe ShippingProfileId
   } deriving (Eq, Show)
-
--- instance ToJSON CustomerProfilePayment where
---   toEncoding = genericToEncoding dropRecordName
--- instance FromJSON CustomerProfilePayment where
---   parseJSON = genericParseJSON dropRecordName
 
 mkCustomerProfilePayment :: CustomerProfilePayment
 mkCustomerProfilePayment = CustomerProfilePayment Nothing Nothing Nothing Nothing
@@ -559,21 +401,11 @@ data Solution = Solution {
   solution_vendorName :: Maybe T.Text
   } deriving (Eq, Show)
 
--- instance ToJSON Solution where
---   toEncoding = genericToEncoding dropRecordName
--- instance FromJSON Solution where
---   parseJSON = genericParseJSON dropRecordName
-
 -- | anet:orderType
 data Order = Order {
   order_invoiceNumber :: Maybe T.Text,
   order_description   :: Maybe T.Text
   } deriving (Eq, Show)
-
--- instance ToJSON Order where
---   toEncoding = genericToEncoding dropRecordName
--- instance FromJSON Order where
---   parseJSON = genericParseJSON dropRecordName
 
 -- | anet:lineItemType
 data LineItem = LineItem {
@@ -585,20 +417,10 @@ data LineItem = LineItem {
   lineItem_taxable     :: Maybe Bool
   } deriving (Eq, Show)
 
--- instance ToJSON LineItem where
---   toEncoding = genericToEncoding dropRecordName
--- instance FromJSON LineItem where
---   parseJSON = genericParseJSON dropRecordName
-
 -- | anet:ArrayOfLineItem
 data LineItems = LineItems {
   lineItems_lineItem :: ArrayOf LineItem
   } deriving (Eq, Show)
-
--- instance ToJSON LineItems where
---   toEncoding = genericToEncoding dropRecordName
--- instance FromJSON LineItems where
---   parseJSON = genericParseJSON                 
 
 -- | anet:extendedAmountType
 data ExtendedAmount = ExtendedAmount {
@@ -606,11 +428,6 @@ data ExtendedAmount = ExtendedAmount {
   extendedAmount_name        :: Maybe T.Text,
   extendedAmount_description :: Maybe T.Text
   } deriving (Eq, Show)
-
--- instance ToJSON ExtendedAmount where
---   toEncoding = genericToEncoding dropRecordName
--- instance FromJSON ExtendedAmount where
---   parseJSON = genericParseJSON dropRecordName
 
 -- | anet:customerDataType
 data CustomerData = CustomerData {
@@ -621,11 +438,6 @@ data CustomerData = CustomerData {
   customerData_taxId           :: Maybe TaxId
   } deriving (Eq, Show)
 
--- instance ToJSON CustomerData where
---   toEncoding = genericToEncoding dropRecordName
--- instance FromJSON CustomerData where
---   parseJSON = genericParseJSON dropRecordName
-
 mkCustomerData :: CustomerData
 mkCustomerData = CustomerData Nothing Nothing Nothing Nothing Nothing
 
@@ -635,22 +447,12 @@ data CcAuthentication = CcAuthentication {
   ccAuthentication_cardholderAuthenticationValue :: T.Text
   } deriving (Eq, Show)
 
--- instance ToJSON CcAuthentication where
---   toEncoding = genericToEncoding dropRecordName
--- instance FromJSON CcAuthentication where
---   parseJSON = genericParseJSON dropRecordName
-
 -- | anet:transRetailInfoType
 data TransRetailInfo = TransRetailInfo {
   transRetailInfo_marketType        :: Maybe T.Text,
   transRetailInfo_deviceType        :: Maybe T.Text,
   transRetailInfo_customerSignature :: Maybe T.Text
   } deriving (Eq, Show)
-
--- instance ToJSON TransRetailInfo where
---   toEncoding = genericToEncoding dropRecordName
--- instance FromJSON TransRetailInfo where
---   parseJSON = genericParseJSON dropRecordName
 
 data SettingName = SettingName_emailCustomer
                  -- | Sends an email to the merchant email address on your Authorize.NET after every purchase
@@ -661,8 +463,8 @@ data SettingName = SettingName_emailCustomer
                  | SettingName_recurringBilling
                  | SettingName_duplicateWindow
                  | SettingName_testRequest
-                 | SettingName_hostedProfileReturnUrl
                  | SettingName_hostedProfileReturnUrlText
+                 | SettingName_hostedProfileReturnUrl
                  | SettingName_hostedProfilePageBorderVisible
                  | SettingName_hostedProfileIFrameCommunicatorUrl
                  | SettingName_hostedProfileHeadingBgColor
@@ -671,27 +473,16 @@ data SettingName = SettingName_emailCustomer
                  | SettingName_hostedProfileCardCodeRequired
                  deriving (Eq, Show)
 
-$(deriveXml ''SettingName)
-
-
--- instance ToJSON SettingName where
---   toEncoding = genericToEncoding enumType
--- instance FromJSON SettingName where
---   parseJSON = genericParseJSON enumType
-
-
 -- | anet:settingType
 data Setting = Setting {
   setting_settingName  :: SettingName,
   setting_settingValue :: T.Text
   } deriving (Eq, Show)
 
-$(deriveXml ''Setting)
-
--- instance ToJSON Setting where
---   toEncoding = genericToEncoding dropRecordName
--- instance FromJSON Setting where
---   parseJSON = genericParseJSON dropRecordName
+-- anet:ArrayOfSetting
+data ArrayOfSetting = ArrayOfSetting {
+  arrayOfSetting_setting :: ArrayOf Setting
+  } deriving (Eq, Show)
 
 -- | anet:userField
 data UserField = UserField {
@@ -699,30 +490,15 @@ data UserField = UserField {
   userField_value :: T.Text
   } deriving (Eq, Show)
 
--- instance ToJSON UserField where
---   toEncoding = genericToEncoding dropRecordName
--- instance FromJSON UserField where
---   parseJSON = genericParseJSON dropRecordName
-
 data SecureAcceptance = SecureAcceptance {
   secureAcceptance_SecureAcceptanceUrl :: T.Text,
   secureAcceptance_PayerID             :: T.Text
   } deriving (Eq, Show)
 
--- instance ToJSON SecureAcceptance where
---   toEncoding = genericToEncoding dropRecordName
--- instance FromJSON SecureAcceptance where
---   parseJSON = genericParseJSON dropRecordName
-
 data EmvResponse = EmvResponse {
   emvResponse_tsvData :: Maybe T.Text,
   emvResponse_tag     :: Maybe T.Text
   } deriving (Eq, Show)
-
--- instance ToJSON EmvResponse where
---   toEncoding = genericToEncoding dropRecordName
--- instance FromJSON EmvResponse where
---   parseJSON = genericParseJSON dropRecordName
 
 -- | anet:transactionRequestType
 data TransactionRequest = TransactionRequest {
@@ -757,14 +533,9 @@ data TransactionRequest = TransactionRequest {
   transactionRequest_cardholderAuthentication :: Maybe CcAuthentication,
   transactionRequest_retail                   :: Maybe TransRetailInfo,
   transactionRequest_employeeId               :: Maybe T.Text,
-  transactionRequest_transactionSettings      :: Maybe [Setting],
+  transactionRequest_transactionSettings      :: Maybe ArrayOfSetting,
   transactionRequest_userFields               :: Maybe UserField
   } deriving (Eq, Show)
-
--- instance ToJSON TransactionRequest where
---   toEncoding = genericToEncoding dropRecordName
--- instance FromJSON TransactionRequest where
---   parseJSON = genericParseJSON dropRecordName
 
 -- | The TransactionRequest type has a lot of Maybe fields, so use this to get a bare-bones default.
 mkTransactionRequest :: TransactionType -> Decimal -> TransactionRequest
@@ -775,39 +546,17 @@ data MessageType = Message_Ok
                  | Message_Error
                  deriving (Eq, Show)
 
-$(deriveXml ''MessageType)
-                          
--- instance ToJSON MessageType where
---   toEncoding = genericToEncoding enumType
--- instance FromJSON MessageType where
---   parseJSON = genericParseJSON enumType         
-    
-
 -- | The possible message codes are documented at http://developer.authorize.net/api/reference/dist/json/responseCodes.json
 data Message = Message {
   message_code :: T.Text,
   message_text :: T.Text
   } deriving (Eq, Show)
 
-$(deriveXml ''Message)
-
--- instance ToJSON Message where
---   toEncoding = genericToEncoding dropRecordName
--- instance FromJSON Message where
---   parseJSON = genericParseJSON dropRecordName
-
 -- | anet:messagesType
 data Messages = Messages {
   messages_resultCode :: MessageType,
   messages_message    :: ArrayOf Message
   } deriving (Eq, Show)
-
-$(deriveXml ''Messages)
-
--- instance ToJSON Messages where
---   toEncoding = genericToEncoding dropRecordName
--- instance FromJSON Messages where
---   parseJSON = genericParseJSON dropRecordName
 
 -- | anet:transactionResponse has an element called 'prePaidCard' with an anonymous type
 data PrePaidCard = PrePaidCard {
@@ -816,30 +565,15 @@ data PrePaidCard = PrePaidCard {
   prePaidCard_balanceOnCard   :: Maybe T.Text
   } deriving (Eq, Show)
 
--- instance ToJSON PrePaidCard where
---   toEncoding = genericToEncoding dropRecordName
--- instance FromJSON PrePaidCard where
---   parseJSON = genericParseJSON dropRecordName
-
 data TransactionResponse_message = TransactionResponse_message {
   transactionResponseMessage_code        :: Maybe T.Text,
   transactionResponseMessage_description :: Maybe T.Text
   } deriving (Eq, Show)
 
--- instance ToJSON TransactionResponse_message where
---   toEncoding = genericToEncoding choiceType
--- instance FromJSON TransactionResponse_message where
---   parseJSON = genericParseJSON choiceType
-
 data TransactionResponse_error = TransactionResponse_error {
   transactionResponseError_errorCode :: Maybe T.Text,
   transactionResponseError_errorText :: Maybe T.Text
   } deriving (Eq, Show)
-
--- instance ToJSON TransactionResponse_error where
---   toEncoding = genericToEncoding choiceType
--- instance FromJSON TransactionResponse_error where
---   parseJSON = genericParseJSON choiceType
 
 data TransactionResponse_splitTenderPayment = TransactionResponse_splitTenderPayment {
   transactionResponseSplitTenderPayment_transId            :: Maybe T.Text,
@@ -851,21 +585,12 @@ data TransactionResponse_splitTenderPayment = TransactionResponse_splitTenderPay
   transactionResponseSplitTenderPayment_requestedAmount    :: Maybe T.Text,
   transactionResponseSplitTenderPayment_approvedAmount     :: Maybe T.Text,
   transactionResponseSplitTenderPayment_balanceOnCard      :: Maybe T.Text              
-  } | D3_DummyForAeson deriving (Eq, Show)
-
--- instance ToJSON TransactionResponse_splitTenderPayment where
---   toEncoding = genericToEncoding choiceType
--- instance FromJSON TransactionResponse_splitTenderPayment where
---   parseJSON = genericParseJSON choiceType
-
--- anet:ArrayOfSetting
-data ArrayOfSetting = ArrayOfSetting {
-  arrayOfSetting_setting :: ArrayOf Setting
   } deriving (Eq, Show)
 
-$(deriveXml ''ArrayOfSetting)
+-- | anet:ANetApiResponse
+data ANetApiResponse = ANetApiResponse {
+  aNetApiResponse_refId        :: Maybe T.Text,
+  aNetApiResponse_messages     :: Messages,
+  aNetApiResponse_sessionToken :: Maybe T.Text
+  } deriving (Eq, Show)
 
--- instance ToJSON ArrayOfSetting where
---   toEncoding = genericToEncoding dropRecordName
--- instance FromJSON ArrayOfSetting where
---   parseJSON = genericParseJSON dropRecordName
