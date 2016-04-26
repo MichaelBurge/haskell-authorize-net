@@ -49,12 +49,18 @@ data DeleteCustomerProfileRequest = DeleteCustomerProfileRequest {
   deleteCustomerProfile_customerProfileId      :: CustomerProfileId
   } deriving (Eq, Show)
 
-$(deriveXml ''DeleteCustomerProfileRequest)                                    
-  -- } | CreateCustomerPaymentProfile {
-  -- createCustomerPaymentProfile_merchantAuthentication :: MerchantAuthentication,
-  -- createCustomerPaymentProfile_customerProfileId      :: CustomerProfileId,
-  -- createCustomerPaymentProfile_paymentProfile         :: CustomerPaymentProfile
-  -- } | GetCustomerPaymentProfile {
+$(deriveXml ''DeleteCustomerProfileRequest)
+
+data CreateCustomerPaymentProfileRequest = CreateCustomerPaymentProfileRequest {
+  createCustomerPaymentProfile_merchantAuthentication :: MerchantAuthentication,
+  createCustomerPaymentProfile_customerProfileId      :: CustomerProfileId,
+  createCustomerPaymentProfile_paymentProfile         :: CustomerPaymentProfile,
+  createCustomerPaymentProfile_validationMode         :: ValidationMode
+  } deriving (Eq, Show)
+
+$(deriveXml ''CreateCustomerPaymentProfileRequest)
+
+  --  | GetCustomerPaymentProfile {
   -- getCustomerPaymentProfile_merchantAuthentication   :: MerchantAuthentication,
   -- getCustomerPaymentProfile_customerProfileId        :: CustomerProfileId,
   -- getCustomerPaymentProfile_customerPaymentProfileId :: CustomerPaymentProfileId

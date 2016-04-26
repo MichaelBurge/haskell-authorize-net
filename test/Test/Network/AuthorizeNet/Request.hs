@@ -131,67 +131,65 @@ test_deleteCustomerProfileRequest =
   in assertEncodes expected actual
 
 
--- apiExpected_createCustomerPaymentProfileRequest :: String
--- apiExpected_createCustomerPaymentProfileRequest = [r|
--- {
---     "createCustomerPaymentProfileRequest": {
---         "merchantAuthentication": {
---             "name": "API_LOGIN_ID",
---             "transactionKey": "API_TRANSACTION_KEY"
---         },
---         "customerProfileId": "10000",
---         "paymentProfile": {
---             "billTo": {
---                 "firstName": "John",
---                 "lastName": "Doe",
---                 "company": "",
---                 "address": "123 Main St.",
---                 "city": "Bellevue",
---                 "state": "WA",
---                 "zip": "98004",
---                 "country": "USA",
---                 "phoneNumber": "000-000-0000",
---                 "faxNumber": ""
---             },
---             "payment": {
---                 "creditCard": {
---                     "cardNumber": "4111111111111111",
---                     "expirationDate": "2023-12"
---                 }
---             }
---         },
---         "validationMode": "liveMode"
---     }
--- }
--- |]
-
--- apiActual_createCustomerPaymentProfileRequest :: ApiRequest
--- apiActual_createCustomerPaymentProfileRequest = CreateCustomerPaymentProfile testMerchantAuthentication 10000 $ CustomerPaymentProfile {
---   customerPaymentProfile_customerType = Nothing,
---   customerPaymentProfile_billTo = Just CustomerAddress {
---       customerAddress_firstName = Just "John",
---       customerAddress_lastName = Just "Doe",
---       customerAddress_company = Just "",
---       customerAddress_address = Just "123 Main St.",
---       customerAddress_city = Just "Bellevue",
---       customerAddress_state = Just "WA",
---       customerAddress_zip = Just "98004",
---       customerAddress_country = Just "USA",
---       customerAddress_phoneNumber = Just "000-000-0000",
---       customerAddress_faxNumber = Just "",
---       customerAddress_email = Nothing
---       },
---   customerPaymentProfile_payment = Just $ Payment_creditCard $ CreditCard {
---       creditCard_cardNumber = "4111111111111111",
---       creditCard_expirationDate = "2023-12",
---       creditCard_cardCode = Nothing,
---       creditCard_isPaymentToken = Nothing,
---       creditCard_cryptogram = Nothing
---       },
---   customerPaymentProfile_driversLicense = Nothing,
---   customerPaymentProfile_taxId = Nothing
---   }
-
+test_createCustomerPaymentProfileRequest :: Assertion
+test_createCustomerPaymentProfileRequest =
+  let expected = [r|
+<?xml version="1.0" encoding="utf-8"?>
+<createCustomerPaymentProfileRequest xmlns="AnetApi/xml/v1/schema/AnetApiSchema.xsd">
+  <merchantAuthentication>
+    <name>API_LOGIN_ID</name>
+    <transactionKey>API_TRANSACTION_KEY</transactionKey>
+  </merchantAuthentication>
+  <customerProfileId>10000</customerProfileId>
+  <paymentProfile>
+    <billTo>
+      <firstName>John</firstName>
+      <lastName>Doe</lastName>
+      <company></company>
+      <address>123 Main St.</address>
+      <city>Bellevue</city>
+      <state>WA</state>
+      <zip>98004</zip>
+      <country>USA</country>
+      <phoneNumber>000-000-0000</phoneNumber>
+      <faxNumber></faxNumber>
+    </billTo>
+    <payment>
+      <creditCard>
+        <cardNumber>4111111111111111</cardNumber>
+        <expirationDate>2023-12</expirationDate>
+      </creditCard>
+    </payment>
+  </paymentProfile>
+  <validationMode>liveMode</validationMode>
+</createCustomerPaymentProfileRequest>
+|]
+      actual = CreateCustomerPaymentProfileRequest testMerchantAuthentication 10000 (CustomerPaymentProfile {
+  customerPaymentProfile_customerType = Nothing,
+  customerPaymentProfile_billTo = Just CustomerAddress {
+      customerAddress_firstName = Just "John",
+      customerAddress_lastName = Just "Doe",
+      customerAddress_company = Just "",
+      customerAddress_address = Just "123 Main St.",
+      customerAddress_city = Just "Bellevue",
+      customerAddress_state = Just "WA",
+      customerAddress_zip = Just "98004",
+      customerAddress_country = Just "USA",
+      customerAddress_phoneNumber = Just "000-000-0000",
+      customerAddress_faxNumber = Just "",
+      customerAddress_email = Nothing
+      },
+  customerPaymentProfile_payment = Just $ Payment_creditCard $ CreditCard {
+      creditCard_cardNumber = "4111111111111111",
+      creditCard_expirationDate = "2023-12",
+      creditCard_cardCode = Nothing,
+      creditCard_isPaymentToken = Nothing,
+      creditCard_cryptogram = Nothing
+      },
+  customerPaymentProfile_driversLicense = Nothing,
+  customerPaymentProfile_taxId = Nothing
+  }) Validation_liveMode
+  in assertEncodes expected actual
 -- apiExpected_getCustomerPaymentProfileRequest :: String
 -- apiExpected_getCustomerPaymentProfileRequest = [r|
 -- {
@@ -444,8 +442,8 @@ requestTests = testGroup "API Requests Encode and Decode to JSON correctly" [
   testCase "getCustomerProfileRequest" test_getCustomerProfileRequest,
   testCase "getCustomerProfileIdsRequest" test_getCustomerProfileIdsRequest, 
   testCase "updateCustomerProfileRequest" test_updateCustomerProfileRequest,
-  testCase "deleteCustomerProfileRequest" test_deleteCustomerProfileRequest
-  -- testCase "createCustomerPaymentProfileRequest" $ assertEncodes apiExpected_createCustomerPaymentProfileRequest apiActual_createCustomerPaymentProfileRequest,
+  testCase "deleteCustomerProfileRequest" test_deleteCustomerProfileRequest,
+  testCase "createCustomerPaymentProfileRequest" test_createCustomerPaymentProfileRequest
   -- testCase "getCustomerPaymentProfileRequest" $ assertEncodes apiExpected_getCustomerPaymentProfileRequest apiActual_getCustomerPaymentProfileRequest,
   -- testCase "validateCustomerPaymentProfileRequest" $ assertEncodes apiExpected_validateCustomerPaymentProfileRequest apiActual_validateCustomerPaymentProfileRequest,
   -- testCase "updateCustomerPaymentProfile" $ assertEncodes apiExpected_updateCustomerPaymentProfileRequest apiActual_updateCustomerPaymentProfileRequest,
