@@ -11,7 +11,6 @@ import Text.XML.HaXml.Types
 
 import Text.ParserCombinators.Poly.Plain
 
-import Network.AuthorizeNet.Instances
 import Network.AuthorizeNet.Types
 
 import qualified Data.ByteString.Lazy as BSL

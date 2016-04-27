@@ -17,12 +17,6 @@ import Network.AuthorizeNet.Util
 
 import Network.Wreq
 
-instance ApiRequest AuthenticateTestRequest where
-  type ResponseType AuthenticateTestRequest = AuthenticateTestResponse
-
-instance ApiResponse AuthenticateTestResponse where
-  type RequestType AuthenticateTestResponse = AuthenticateTestRequest
-  aNetApiResponse (AuthenticateTestResponse{..}) = ANetApiResponse authenticateTestResponse_refId authenticateTestResponse_messages authenticateTestResponse_sessionToken
 
 -- | The sandbox endpoint for Authorize.NET
 sandboxApiConfig :: ApiConfig

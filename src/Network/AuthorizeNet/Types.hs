@@ -44,7 +44,6 @@ class XmlParsable a => ApiRequest a where
   type ResponseType a
 
 class XmlParsable a => ApiResponse a where
-  type RequestType a
   aNetApiResponse :: a -> ANetApiResponse
 
 -- | Information about the Authorize.NET API's endpoint. See 'API Endpoints' at http://developer.authorize.net/api/reference/index.html
@@ -62,15 +61,6 @@ newtype Decimal = Decimal T.Text deriving (Eq, Show, IsString)
 
 -- | Some Authorize.NET services in their JSON represent a single element as a single-element list, and others use an object. This type normalizes them into a list.
 data ArrayOf a = ArrayOf [a] deriving (Eq, Show, Foldable)
-
-instance SchemaType a => SchemaType (ArrayOf a) where
-  parseSchemaType s = return ArrayOf `apply` many (parseSchemaType s)
-  schemaTypeToXML s (ArrayOf xs) = concatMap (schemaTypeToXML s) xs 
-
-instance IsList (ArrayOf a) where
-  type Item (ArrayOf a) = a
-  fromList xs = ArrayOf xs
-  toList (ArrayOf xs) = xs
 
 type CustomerAddressId = NumericString
 type CustomerProfileId = NumericString
