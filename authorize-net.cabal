@@ -15,7 +15,8 @@ cabal-version:       >=1.10
 
 library
   hs-source-dirs:      src
-  exposed-modules:     Network.AuthorizeNet.Api
+  exposed-modules:     Network.AuthorizeNet
+                     , Network.AuthorizeNet.Api
                      , Network.AuthorizeNet.Instances
                      , Network.AuthorizeNet.Request
                      , Network.AuthorizeNet.Response
