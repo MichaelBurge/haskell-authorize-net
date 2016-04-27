@@ -17,7 +17,7 @@ data AuthenticateTestResponse = AuthenticateTestResponse {
   authenticateTestResponse_sessionToken :: Maybe T.Text
   } deriving (Eq, Show)
 
-$(deriveXmlWithOptions (defaultOptions { namespaceLevel = Namespace_full }) ''AuthenticateTestResponse)
+$(deriveXmlFull ''AuthenticateTestResponse)
 
 data CreateCustomerProfileResponse = CreateCustomerProfileResponse {
   createCustomerProfileResponse_refId                         :: Maybe T.Text,
@@ -25,10 +25,10 @@ data CreateCustomerProfileResponse = CreateCustomerProfileResponse {
   createCustomerProfileResponse_sessionToken                  :: Maybe T.Text,
   -- | The CustomerProfileId should be present on success. Save this for later.
   createCustomerProfileResponse_customerProfileId             :: Maybe CustomerProfileId,
-  createCustomerProfileResponse_customerPaymentProfileIdList  :: ArrayOf CustomerPaymentProfileId,
-  createCustomerProfileResponse_customerShippingAddressIdList :: ArrayOf CustomerShippingAddressId,
+  createCustomerProfileResponse_customerPaymentProfileIdList  :: ArrayOfNumericString,
+  createCustomerProfileResponse_customerShippingAddressIdList :: ArrayOfNumericString,
   -- | I believe these are returned by the bank when Authorize.NET attempts to validate the information
-  createCustomerProfileResponse_validationDirectResponseList  :: ArrayOf T.Text
+  createCustomerProfileResponse_validationDirectResponseList  :: ArrayOfString
   } deriving (Eq, Show)
 
 $(deriveXml ''CreateCustomerProfileResponse)
@@ -42,17 +42,17 @@ data GetCustomerProfileResponse = GetCustomerProfileResponse {
   getCustomerProfileResponse_sessionToken    :: Maybe T.Text,
   
   getCustomerProfileResponse_profile         :: CustomerProfileMasked,
-  getCustomerProfileResponse_subscriptionIds :: ArrayOf SubscriptionId
+  getCustomerProfileResponse_subscriptionIds :: SubscriptionIdList
   } deriving (Eq, Show)
 
-$(deriveXml ''GetCustomerProfileResponse)
+$(deriveXmlFull ''GetCustomerProfileResponse)
 
 data GetCustomerProfileIdsResponse = GetCustomerProfileIdsResponse {
   getCustomerProfileIdsResponse_refId        :: Maybe T.Text,
   getCustomerProfileIdsResponse_messages     :: Messages,
   getCustomerProfileIdsResponse_sessionToken :: Maybe T.Text,
 
-  getCustomerProfileIdsResponse_ids          :: ArrayOf CustomerProfileId
+  getCustomerProfileIdsResponse_ids          :: ArrayOfNumericString
   } deriving (Eq, Show)
 
 $(deriveXml ''GetCustomerProfileIdsResponse)
@@ -92,7 +92,7 @@ data GetCustomerPaymentProfileResponse = GetCustomerPaymentProfileResponse {
   getCustomerPaymentProfileResponse_paymentProfile :: Maybe CustomerPaymentProfileMasked
   } deriving (Eq, Show)
 
-$(deriveXml ''GetCustomerPaymentProfileResponse)
+$(deriveXmlFull ''GetCustomerPaymentProfileResponse)
 
 data GetCustomerPaymentProfileListResponse = GetCustomerPaymentProfileListResponse {
   getCustomerPaymentProfileListResponse_refId        :: Maybe T.Text,
@@ -103,7 +103,7 @@ data GetCustomerPaymentProfileListResponse = GetCustomerPaymentProfileListRespon
   getCustomerPaymentProfileListResponse_paymentProfiles     :: Maybe ArrayOfCustomerPaymentProfileListItem
   } deriving (Eq, Show)
 
-$(deriveXml ''GetCustomerPaymentProfileListResponse)
+$(deriveXmlFull ''GetCustomerPaymentProfileListResponse)
 
 data ValidateCustomerPaymentProfileResponse = ValidateCustomerPaymentProfileResponse {
   validateCustomerPaymentProfileResponse_refId        :: Maybe T.Text,
@@ -148,8 +148,8 @@ data CreateProfileResponse = CreateProfileResponse {
   createProfileResponse_messages                      :: Messages,
   createProfileResponse_sessionToken                  :: Maybe T.Text,
   createProfileResponse_customerProfileId             :: Maybe CustomerProfileId,
-  createProfileResponse_customerPaymentProfileIdList  :: Maybe (ArrayOf CustomerPaymentProfileId),
-  createProfileResponse_customerShippingAddressIdList :: Maybe (ArrayOf CustomerShippingAddressId)
+  createProfileResponse_customerPaymentProfileIdList  :: Maybe (ArrayOfNumericString),
+  createProfileResponse_customerShippingAddressIdList :: Maybe (ArrayOfNumericString)
   } deriving (Eq, Show)
                              
 $(deriveXml ''CreateProfileResponse)
@@ -170,10 +170,11 @@ data TransactionResponse = TransactionResponse {
   transactionResponse_entryMode           :: Maybe T.Text,
   transactionResponse_splitTenderId       :: Maybe T.Text,
   transactionResponse_prePaidCard         :: Maybe PrePaidCard,
-  transactionResponse_messages            :: Maybe (ArrayOf TransactionResponse_message),
-  transactionResponse_errors              :: Maybe (ArrayOf TransactionResponse_error),
-  transactionResponse_splitTenderPayments :: Maybe (ArrayOf TransactionResponse_splitTenderPayment),
-  transactionResponse_userFields          :: Maybe (ArrayOf UserField),
+  -- | TODO: The Authorize.NET XSD suggests there should be a 'messages' field that holds an array of 'message' objects, but I didn't observe that in the output.
+  transactionResponse_message             :: Maybe TransactionResponse_message,
+  transactionResponse_errors              :: Maybe ArrayOfTransactionResponseError,
+  transactionResponse_splitTenderPayments :: Maybe ArrayOfTransactionResponseSplitTenderPayment,
+  transactionResponse_userFields          :: Maybe ArrayOfUserField,
   transactionResponse_shipTo              :: Maybe NameAndAddress,
   transactionResponse_secureAcceptance    :: Maybe SecureAcceptance,
   transactionResponse_emvResponse         :: Maybe EmvResponse

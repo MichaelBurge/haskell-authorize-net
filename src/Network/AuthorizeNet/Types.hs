@@ -55,7 +55,8 @@ data ApiConfig = ApiConfig {
   apiConfig_hostedProfileUrl :: T.Text
   } deriving (Show)
 
-newtype NumericString = NumericString Int deriving (Eq, Ord, Show, Num)
+newtype NumericString = NumericString Integer deriving (Eq, Ord, Show, Num)
+
 --newtype Decimal = Decimal T.Text deriving (Eq, Show, IsString, ToJSON, FromJSON)
 newtype Decimal = Decimal T.Text deriving (Eq, Show, IsString)
 
@@ -64,7 +65,7 @@ data ArrayOf a = ArrayOf [a] deriving (Eq, Show, Foldable)
 
 instance SchemaType a => SchemaType (ArrayOf a) where
   parseSchemaType s = return ArrayOf `apply` many (parseSchemaType s)
-  schemaTypeToXML s (ArrayOf xs) = concatMap (schemaTypeToXML s) xs
+  schemaTypeToXML s (ArrayOf xs) = concatMap (schemaTypeToXML s) xs 
 
 instance IsList (ArrayOf a) where
   type Item (ArrayOf a) = a
@@ -79,6 +80,18 @@ type ShippingProfileId = NumericString
 type SubscriptionId = NumericString
 type TransactionId = NumericString
 type TaxId = T.Text
+
+data ArrayOfString = ArrayOfString {
+  arrayOfString_string :: ArrayOf T.Text
+  } deriving (Eq, Show)
+
+data ArrayOfNumericString = ArrayOfNumericString {
+  arrayOfNumericString_numericString :: ArrayOf NumericString
+  } deriving (Eq, Show)
+
+data SubscriptionIdList = SubscriptionIdList {
+  subscriptionIdList_subscriptionId :: ArrayOf NumericString
+  } deriving (Eq, Show)
 
 type CardCode = NumericString
 -- | Holds API credentials for Authorize.NET. You should get these when you sign up for a sandbox or production account.
@@ -283,13 +296,19 @@ data CustomerPaymentProfileEx = CustomerPaymentProfileEx {
 
 -- | anet:customerPaymentProfileMaskedType
 data CustomerPaymentProfileMasked = CustomerPaymentProfileMasked {
+  customerPaymentProfileMasked_customerType             :: Maybe CustomerType,
+  customerPaymentProfileMasked_billTo                   :: Maybe CustomerAddress,
+  
   customerPaymentProfileMasked_customerProfileId        :: Maybe CustomerProfileId,
   customerPaymentProfileMasked_customerPaymentProfileId :: CustomerPaymentProfileId,
   customerPaymentProfileMasked_payment                  :: Maybe PaymentMasked,
   customerPaymentProfileMasked_driversLicense           :: Maybe DriversLicense,
   customerPaymentProfileMasked_taxId                    :: Maybe TaxId,
-  customerPaymentProfileMasked_subscriptionIds          :: Maybe (ArrayOf SubscriptionId)
+  customerPaymentProfileMasked_subscriptionIds          :: Maybe SubscriptionIdList
   } deriving (Eq, Show)
+
+mkCustomerPaymentProfileMasked :: CustomerPaymentProfileId -> CustomerPaymentProfileMasked
+mkCustomerPaymentProfileMasked customerPaymentProfileId = CustomerPaymentProfileMasked Nothing Nothing Nothing customerPaymentProfileId Nothing Nothing Nothing Nothing
 
 -- | anet:CustomerPaymentProfileSearchTypeEnum
 data CustomerPaymentProfileSearchType = SearchType_cardsExpiringInMonth deriving (Eq, Show)
@@ -373,7 +392,7 @@ data CustomerProfileMasked = CustomerProfileMasked {
   customerProfileMasked_customerProfileId  :: Maybe NumericString,
   
   customerProfileMasked_paymentProfiles :: ArrayOf CustomerPaymentProfileMasked,
-  customerProfileMasked_shipToList      :: Maybe CustomerAddressEx
+  customerProfileMasked_shipToList      :: ArrayOf CustomerAddressEx
   } deriving (Eq, Show)
 
 data ValidationMode = Validation_none
@@ -490,6 +509,10 @@ data UserField = UserField {
   userField_value :: T.Text
   } deriving (Eq, Show)
 
+data ArrayOfUserField = ArrayOfUserField {
+  arrayOfUserField_userField :: ArrayOf UserField
+  } deriving (Eq, Show)
+
 data SecureAcceptance = SecureAcceptance {
   secureAcceptance_SecureAcceptanceUrl :: T.Text,
   secureAcceptance_PayerID             :: T.Text
@@ -564,15 +587,23 @@ data PrePaidCard = PrePaidCard {
   prePaidCard_approvedAmount  :: Maybe T.Text,
   prePaidCard_balanceOnCard   :: Maybe T.Text
   } deriving (Eq, Show)
-
+                   
 data TransactionResponse_message = TransactionResponse_message {
   transactionResponseMessage_code        :: Maybe T.Text,
   transactionResponseMessage_description :: Maybe T.Text
   } deriving (Eq, Show)
 
+data ArrayOfTransactionResponseMessage = ArrayOfTransactionResponseMessage {
+  arrayOfTransactionResponseMessage_message :: ArrayOf TransactionResponse_message
+  } deriving (Eq, Show)
+
 data TransactionResponse_error = TransactionResponse_error {
   transactionResponseError_errorCode :: Maybe T.Text,
   transactionResponseError_errorText :: Maybe T.Text
+  } deriving (Eq, Show)
+
+data ArrayOfTransactionResponseError = ArrayOfTransactionResponseError {
+  arrayOfTransactionResponseMessage_error :: ArrayOf TransactionResponse_error
   } deriving (Eq, Show)
 
 data TransactionResponse_splitTenderPayment = TransactionResponse_splitTenderPayment {
@@ -585,6 +616,10 @@ data TransactionResponse_splitTenderPayment = TransactionResponse_splitTenderPay
   transactionResponseSplitTenderPayment_requestedAmount    :: Maybe T.Text,
   transactionResponseSplitTenderPayment_approvedAmount     :: Maybe T.Text,
   transactionResponseSplitTenderPayment_balanceOnCard      :: Maybe T.Text              
+  } deriving (Eq, Show)
+
+data ArrayOfTransactionResponseSplitTenderPayment = ArrayOfTransactionResponseSplitTenderPayment {
+  arrayOfTransactionResponseSplitTenderPayment_splitTenderPayment :: ArrayOf TransactionResponse_splitTenderPayment
   } deriving (Eq, Show)
 
 -- | anet:ANetApiResponse

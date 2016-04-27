@@ -1,4 +1,4 @@
-{-# LANGUAGE TypeFamilies, TemplateHaskell, MultiParamTypeClasses #-}
+{-# LANGUAGE TypeFamilies, TemplateHaskell, MultiParamTypeClasses, OverloadedLists #-}
 
 module Network.AuthorizeNet.Instances where
 
@@ -27,6 +27,9 @@ instance SimpleType T.Text where
   acceptingParser = fmap T.pack (Parse.many Parse.next)
   simpleTypeText text = T.unpack text
 
+$(deriveXml ''SubscriptionIdList)
+$(deriveXml ''ArrayOfString)
+$(deriveXml ''ArrayOfNumericString)
 $(deriveXml ''NumericString)
 $(deriveXml ''MerchantAuthentication)
 $(deriveXml ''CustomerType)
@@ -79,6 +82,7 @@ $(deriveXml ''SettingName)
 $(deriveXml ''Setting)
 $(deriveXml ''ArrayOfSetting)
 $(deriveXml ''UserField)
+$(deriveXml ''ArrayOfUserField)
 $(deriveXml ''SecureAcceptance)
 $(deriveXml ''EmvResponse)
 $(deriveXml ''TransactionRequest)
@@ -87,6 +91,9 @@ $(deriveXml ''Message)
 $(deriveXml ''Messages)
 $(deriveXml ''PrePaidCard)
 $(deriveXml ''TransactionResponse_message)
+$(deriveXml ''ArrayOfTransactionResponseMessage)
 $(deriveXml ''TransactionResponse_error)
+$(deriveXml ''ArrayOfTransactionResponseError)
 $(deriveXml ''TransactionResponse_splitTenderPayment)
+$(deriveXml ''ArrayOfTransactionResponseSplitTenderPayment)
 $(deriveXml ''ANetApiResponse)

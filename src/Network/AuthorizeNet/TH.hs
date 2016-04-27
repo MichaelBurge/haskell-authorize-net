@@ -10,6 +10,7 @@ module Network.AuthorizeNet.TH (
 import Network.AuthorizeNet.Types
 
 import Control.Monad
+import GHC.Exts
 import Language.Haskell.TH
 import Language.Haskell.TH.Lift
 import Language.Haskell.TH.Syntax
@@ -83,25 +84,42 @@ withType name f = do
         other -> error $ ns ++ "Unsupported type: " ++ show other
     _ -> error $ ns ++ "Data constructor " ++ show name ++ " is not from a data or newtype constructor"
 
-data SpecialType = SMaybe | SNone deriving (Show)
+data SpecialType = SMaybe | SList | SNone deriving (Show)
 
 specialType :: Type -> SpecialType
 specialType (AppT (ConT m) x) | m == ''Maybe = SMaybe
+specialType (AppT (ConT m) x) | m == ''ArrayOf = SList
+specialType (AppT ListT x) = SList
 specialType _ = SNone
 
 type XmlName = String
 type ConName = String
+
+deriveIsList :: Name -> DecsQ
+deriveIsList name =  do
+  wrappedCon <- getWrappedTypeCon name
+  let wrappedConName = conName wrappedCon
+  let outerType = conT name
+      outerPattern = conP wrappedConName [varP $ mkName "x"]
+      innerType = return $ unarrayT $ conType wrappedCon
+  [d|
+   instance IsList $(outerType) where
+     type Item $(outerType) = $(innerType)
+     fromList xs = $(appE (conE wrappedConName) $ appE (conE 'ArrayOf) $ dyn "xs")
+     toList $(outerPattern) = case $(dyn "x") of
+       ArrayOf xs -> xs
+    |]
 
 -- | Fills out Restricts, SchemaType, and SimpleType for a simple NewType wrapper
 deriveXmlNewtype :: Options -> Name -> DecsQ
 deriveXmlNewtype opts name = do
   wrappedConName <- conName <$> getWrappedTypeCon name
   wrappedTypeName <- getWrappedTypeName name
-  let outerType = return $ ConT name
-      innerType = return $ ConT wrappedTypeName
+  let outerType = conT name
+      innerType = conT wrappedTypeName
       vX = varE $ mkName "x"
-      outerPattern = return $ ConP wrappedConName [VarP $ mkName "x"]
-      outerCon = return $ ConE wrappedConName
+      outerPattern = conP wrappedConName [varP $ mkName "x"]
+      outerCon = conE wrappedConName
       restrictsDec = [d|
         instance Restricts $(outerType) $(innerType) where
           restricts $(outerPattern) = $(vX)
@@ -120,8 +138,11 @@ deriveXmlNewtype opts name = do
           acceptingParser = fmap $(outerCon) acceptingParser
           simpleTypeText $(outerPattern) = simpleTypeText $(vX)
         |]
-  
-  concat <$> sequence [restrictsDec, schemaTypeDec, simpleTypeDec]
+  let standardDecs = [restrictsDec, schemaTypeDec, simpleTypeDec]
+      decs = case specialType $ ConT wrappedTypeName of
+               SList -> deriveIsList name : standardDecs
+               _ -> standardDecs
+  concat <$> sequence decs
 
 joinExprs :: [ExpQ] -> ExpQ -> ExpQ
 joinExprs leaves joiner = do
@@ -202,7 +223,7 @@ deriveXmlObject opts name = withType name $ \name tvbs cons -> do
         let parseExpr = [| parseSchemaType $(litE $ stringL xmlName) |]
         case specialType ty of
               SMaybe -> [| optional $(parseExpr) |]
---          SList  -> [| $(return $ ConE $ mkName "ArrayOf") <$> many $(parseExpr) |]
+              SList  -> parseExpr
               SNone  -> parseExpr
       parseConstructor :: Con -> ExpQ
       parseConstructor (RecC name vsts) =
@@ -223,6 +244,7 @@ deriveXmlObject opts name = withType name $ \name tvbs cons -> do
             sttxE = [| schemaTypeToXML $(litE $ stringL xmlName) |]
         in case specialType ty of
           SMaybe -> [| maybe [] $(sttxE) $ $(appE (varE fieldName) xV) |]
+          SList -> [| $(sttxE) $ $(appE (varE fieldName) xV) |]
           SNone -> [| $(sttxE) $ $(appE (varE fieldName) xV) |]
       decSchemaTypeToXml :: DecsQ
       decSchemaTypeToXml =
@@ -231,18 +253,45 @@ deriveXmlObject opts name = withType name $ \name tvbs cons -> do
               RecC _ vsts -> vsts
               _ -> error $ ns ++ "Unsupported constructor for type"
         in do
-          exps <- mapM toXmlOneField vsts
-          body <- [| toXMLElement $(return $ VarE $ mkName "s") [] $(return $ ListE exps) |]
+          let exps = map toXmlOneField vsts
+          body <- [| toXMLElement $(varE $ mkName "s") [] $(listE exps) |]
           let clause = Clause [VarP $ mkName "s", AsP (mkName "x") $ RecP conN []] (NormalB body) []
+
           return $ pure $ FunD (mkName "schemaTypeToXML") [clause]
-  decs <- (++) <$> decParseSchemaType <*> decSchemaTypeToXml
-  return $ [ InstanceD context ty decs ]
+  decs <- concat <$> sequence [decParseSchemaType, decSchemaTypeToXml]
+  -- If there is exactly one record and its a list, automatically derive IsLIst
+  let decIsList :: DecsQ
+      decIsList =
+        case con of
+          RecC _ [(fieldName, _, ty)] ->
+            case specialType ty of
+              SList -> deriveIsList name
+              _ -> pure []
+          _ -> pure []
+  (++) <$> return [ InstanceD context ty decs ] <*> decIsList
 
 conName :: Con -> Name
 conName con = case con of
   NormalC x _ -> x
   RecC x _ -> x
   _ -> error $ "Network.AuthorizeNet.TH.conName: Unsupported constructor type" ++ show con
+
+unarrayT :: Type -> Type
+unarrayT ty =
+  let ns = "Network.AuthorizeNet.TH.unarrayT: "
+  in case ty of
+    (AppT outerTy innerTy) | outerTy == ConT ''ArrayOf -> innerTy
+    _ -> error $ ns ++ "Unexpected outer pattern " ++ show ty
+                               
+conType :: Con -> Type
+conType con =
+  let ns = "Network.AuthorizeNet.TH.conType: "
+  in case con of
+    NormalC _ [(_,x)] -> x
+    RecC _ [(_,_,x)] -> x
+    NormalC name xs -> error $ ns ++ "Expected exactly one field for constructor " ++ showName name
+    RecC name xs -> error $ ns ++ "Expected exactly one field for constructor " ++ showName name
+    _ -> error $ ns ++ "Unsupported constructor type" ++ show con
 
 isAllNullary :: [Con] -> Bool
 isAllNullary cons = flip all cons $ \con ->
@@ -261,17 +310,21 @@ getWrappedTypeCon name = do
     TyConI dec ->
       case dec of
         NewtypeD _ _ _ con _ -> return con
+        DataD _ _ _ [con] _ -> return con
         _ -> error $ ns ++ "Unexpected declaration"
 
 getWrappedTypeName :: Name -> Q Name
 getWrappedTypeName name = do
   let ns = "Network.AuthorizeNet.TH.getWrappedTypeName: Name was " ++ showName name ++ ": "
   con <- getWrappedTypeCon name
-  case con of
-    NormalC _ [(_, ty)] -> case ty of
+  let ty = case con of
+        RecC _ [(_,_,ty)] -> ty
+        NormalC _ [(_, ty)] -> ty
+        _ -> error $ ns ++ "Unexpected constructor"
+  case ty of
       ConT x -> return x
       _ -> error $ ns ++ "Unexpected type"
-    _ -> error $ ns ++ "Unexpected constructor"
+   
 
 deriveXmlParsable :: Options -> Name -> Q [Dec]
 deriveXmlParsable opts name =
@@ -301,3 +354,5 @@ deriveXmlWithOptions opts name = do
   return $ decs ++ xmlParsableDecs
 
                
+deriveXmlFull :: Name -> DecsQ
+deriveXmlFull name = deriveXmlWithOptions (defaultOptions { namespaceLevel = Namespace_full }) name
