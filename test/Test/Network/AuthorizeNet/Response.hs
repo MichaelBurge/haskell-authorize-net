@@ -130,10 +130,26 @@ test_getCustomerProfileResponse =
         ],
         customerProfileMasked_shipToList = []
       }
-      subscriptionIds = SubscriptionIdList $ ArrayOf [ 3078153, 3078154 ]
+      subscriptionIds = Just $ SubscriptionIdList $ ArrayOf [ 3078153, 3078154 ]
       actual = GetCustomerProfileResponse Nothing testMessages Nothing profile subscriptionIds
   in assertEncodes expected actual
- 
+
+test_getCustomerProfileResponse2 :: Assertion
+test_getCustomerProfileResponse2 =
+  let expected = [r|
+<?xml version="1.0" encoding="utf-8"?><getCustomerProfileResponse xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns="AnetApi/xml/v1/schema/AnetApiSchema.xsd"><messages><resultCode>Ok</resultCode><message><code>I00001</code><text>Successful.</text></message></messages><profile><merchantCustomerId>1</merchantCustomerId><description>MichaelBurge</description><email>michaelburge@pobox.com</email><customerProfileId>40243901</customerProfileId></profile></getCustomerProfileResponse>
+|]
+      profile = CustomerProfileMasked {
+        customerProfileMasked_merchantCustomerId = Just "1",
+        customerProfileMasked_description = Just "MichaelBurge",
+        customerProfileMasked_email = Just "michaelburge@pobox.com",
+        customerProfileMasked_customerProfileId = Just 40243901,
+        customerProfileMasked_paymentProfiles = [],
+        customerProfileMasked_shipToList = []
+      }
+      actual = GetCustomerProfileResponse Nothing testMessages Nothing profile Nothing
+  in assertEncodes expected actual
+
 test_getCustomerProfileIdsResponse :: Assertion
 test_getCustomerProfileIdsResponse =
   let expected = [r|
@@ -480,6 +496,7 @@ responseTests = testGroup "API Responses Encode and Decode to JSON correctly" [
       testCase "authenticateTestResponse" test_authenticateTestResponse,
       testCase "createCustomerProfileResponse" test_createCustomerProfileResponse,
       testCase "getCustomerProfileResponse" test_getCustomerProfileResponse,
+      testCase "getCustomerProfileResponse2" test_getCustomerProfileResponse2,
       testCase "getCustomerProfileIdsResponse" test_getCustomerProfileIdsResponse,
       testCase "updateCustomerProfileResponse" test_updateCustomerProfileResponse,
       testCase "deleteCustomerProfileResponse" test_deleteCustomerProfileResponse,

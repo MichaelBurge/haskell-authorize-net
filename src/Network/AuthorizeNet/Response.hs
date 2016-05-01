@@ -38,7 +38,7 @@ data GetCustomerProfileResponse = GetCustomerProfileResponse {
   getCustomerProfileResponse_sessionToken    :: Maybe T.Text,
   
   getCustomerProfileResponse_profile         :: CustomerProfileMasked,
-  getCustomerProfileResponse_subscriptionIds :: SubscriptionIdList
+  getCustomerProfileResponse_subscriptionIds :: Maybe SubscriptionIdList
   } deriving (Eq, Show)
 
 data GetCustomerProfileIdsResponse = GetCustomerProfileIdsResponse {
