@@ -2,13 +2,16 @@
 
 module Network.AuthorizeNet.Api where
 
+import Control.Applicative
 import Control.Lens
 import Data.Char
 
 import qualified Data.ByteString.Lazy as BSL
 import qualified Data.ByteString.Lazy.Search as BSLS
+import qualified Data.Text as T
 import qualified Data.Text.Lazy as TL
 import qualified Data.Text.Lazy.Encoding as TL
+import Text.Regex.Applicative (match, psym, string, RE)
 
 import Network.AuthorizeNet.Instances
 import Network.AuthorizeNet.Request
@@ -44,12 +47,28 @@ stripRepeatedCommas bsl =
   let f = BSLS.replace ",," ("," :: BSL.ByteString) :: BSL.ByteString -> BSL.ByteString
   in head $ dropWhile (\newBsl -> newBsl /= f newBsl) $ iterate f bsl
 
-data ApiError = ApiError {
-  apiError_requestBody  :: BSL.ByteString,
-  apiError_responseBody :: BSL.ByteString,
-  apiError_errorMessage :: String,
-  apiError_messages     :: Maybe Messages
+-- | There are certain common errors you may want to conveniently pattern-match on.
+data SanitizedError = SE_DuplicateRecord {
+  duplicateRecord_id :: Integer
   } deriving (Eq, Show)
+
+data ApiError = ApiError {
+  apiError_requestBody    :: BSL.ByteString,
+  apiError_responseBody   :: BSL.ByteString,
+  apiError_errorMessage   :: String,
+  apiError_messages       :: Maybe Messages,
+  apiError_sanitizedError :: Maybe SanitizedError
+  } deriving (Eq, Show)
+
+sanitizeError :: Messages -> Maybe SanitizedError
+sanitizeError messages =
+    let num :: RE Char Integer
+        num = read <$> many (psym isDigit)
+        regexes :: RE Char SanitizedError
+        regexes = SE_DuplicateRecord <$> (string "A duplicate record with ID " *> num <* " already exists.")
+    in case messages_message messages of
+      ArrayOf [message] -> match regexes $ T.unpack $ message_text message
+      _ -> Nothing
 
 -- | Makes an Authorize.NET request, hopefully returning an ApiResponse. If an error occurs, returns the raw response body and the HaXml parse error
 makeRequest :: forall a. (ApiRequest a, ApiResponse (ResponseType a)) => ApiConfig -> a -> IO (Either ApiError (ResponseType a))
@@ -58,17 +77,17 @@ makeRequest apiConfig request = do
   response <- post (apiConfig_baseUrl apiConfig) $ toXml request
   let mResponseBsl = response ^? responseBody
   case mResponseBsl of
-    Nothing -> return $ Left $ ApiError requestBsl BSL.empty "No response in body" Nothing
+    Nothing -> return $ Left $ ApiError requestBsl BSL.empty "No response in body" Nothing Nothing
     Just responseBsl ->
       let strippedBsl = stripBom responseBsl
-          errorMessages messages = return $ Left $ ApiError requestBsl responseBsl "API call returned an error" $ Just messages
-          xmlParseOptions = XmlParseOptions $ Just $ xmlParsableName (undefined :: a)
-      in case runParseSchemaTypeWithOptions xmlParseOptions strippedBsl of
-        Left _ -> case fromXml strippedBsl :: Either String ANetApiResponse of
-          Left e -> return $ Left $ ApiError requestBsl strippedBsl e Nothing
-          Right response -> errorMessages $ aNetApiResponse_messages response
-        Right response ->
-          let messages = aNetApiResponse_messages $ aNetApiResponse response
+          errorMessages messages = return $ Left $ ApiError requestBsl strippedBsl "API call returned an error" (Just messages) (sanitizeError messages)
+          xmlParseOptions = XmlParseOptions $ Just $ xmlParsableName (undefined :: (ResponseType a))
+      in case fromXml strippedBsl :: Either String (ResponseType a) of
+        Left _ -> case runParseSchemaTypeWithOptions xmlParseOptions strippedBsl :: Either String ANetApiResponse of
+          Left e -> return $ Left $ ApiError requestBsl strippedBsl e Nothing Nothing
+          Right apiResponse -> errorMessages $ aNetApiResponse_messages apiResponse
+        Right apiResponse ->
+          let messages = aNetApiResponse_messages $ aNetApiResponse apiResponse
           in case messages_resultCode messages of
-            Message_Ok -> return $ Right response
+            Message_Ok -> return $ Right apiResponse
             Message_Error -> errorMessages messages

@@ -35,6 +35,7 @@ library
                      , template-haskell
                      , polyparse
                      , HaXml
+                     , regex-applicative
                      , split
                      , th-lift
   default-language:    Haskell2010
