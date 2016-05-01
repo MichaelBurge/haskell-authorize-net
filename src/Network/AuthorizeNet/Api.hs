@@ -1,4 +1,4 @@
-{-# LANGUAGE OverloadedStrings,TypeFamilies,RecordWildCards,FlexibleContexts #-}
+{-# LANGUAGE OverloadedStrings,TypeFamilies,RecordWildCards,FlexibleContexts,ScopedTypeVariables #-}
 
 module Network.AuthorizeNet.Api where
 
@@ -10,6 +10,7 @@ import qualified Data.ByteString.Lazy.Search as BSLS
 import qualified Data.Text.Lazy as TL
 import qualified Data.Text.Lazy.Encoding as TL
 
+import Network.AuthorizeNet.Instances
 import Network.AuthorizeNet.Request
 import Network.AuthorizeNet.Response
 import Network.AuthorizeNet.Types
@@ -51,7 +52,7 @@ data ApiError = ApiError {
   } deriving (Eq, Show)
 
 -- | Makes an Authorize.NET request, hopefully returning an ApiResponse. If an error occurs, returns the raw response body and the HaXml parse error
-makeRequest :: (ApiRequest a, ApiResponse (ResponseType a)) => ApiConfig -> a -> IO (Either ApiError (ResponseType a))
+makeRequest :: forall a. (ApiRequest a, ApiResponse (ResponseType a)) => ApiConfig -> a -> IO (Either ApiError (ResponseType a))
 makeRequest apiConfig request = do
   let requestBsl = toXml request
   response <- post (apiConfig_baseUrl apiConfig) $ toXml request
@@ -60,10 +61,14 @@ makeRequest apiConfig request = do
     Nothing -> return $ Left $ ApiError requestBsl BSL.empty "No response in body" Nothing
     Just responseBsl ->
       let strippedBsl = stripBom responseBsl
-      in case fromXml strippedBsl of
-        Left e -> return $ Left $ ApiError requestBsl strippedBsl e Nothing
+          errorMessages messages = return $ Left $ ApiError requestBsl responseBsl "API call returned an error" $ Just messages
+          xmlParseOptions = XmlParseOptions $ Just $ xmlParsableName (undefined :: a)
+      in case runParseSchemaTypeWithOptions xmlParseOptions strippedBsl of
+        Left _ -> case fromXml strippedBsl :: Either String ANetApiResponse of
+          Left e -> return $ Left $ ApiError requestBsl strippedBsl e Nothing
+          Right response -> errorMessages $ aNetApiResponse_messages response
         Right response ->
           let messages = aNetApiResponse_messages $ aNetApiResponse response
           in case messages_resultCode messages of
             Message_Ok -> return $ Right response
-            Message_Error -> return $ Left $ ApiError requestBsl responseBsl "API call returned an error" $ Just messages
+            Message_Error -> errorMessages messages

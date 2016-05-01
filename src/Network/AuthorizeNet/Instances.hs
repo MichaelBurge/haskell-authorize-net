@@ -110,7 +110,7 @@ $(deriveXml ''TransactionResponse_error)
 $(deriveXml ''ArrayOfTransactionResponseError)
 $(deriveXml ''TransactionResponse_splitTenderPayment)
 $(deriveXml ''ArrayOfTransactionResponseSplitTenderPayment)
-$(deriveXml ''ANetApiResponse)
+$(deriveXmlFull ''ANetApiResponse)
 
 -- Instances for requests
 
@@ -195,7 +195,6 @@ $(deriveXml ''GetHostedProfilePageResponse)
 $(deriveXml ''CreateProfileResponse)
 $(deriveXml ''TransactionResponse)
 $(deriveXml ''CreateTransactionResponse)
-
 
 
 instance ApiResponse AuthenticateTestResponse where

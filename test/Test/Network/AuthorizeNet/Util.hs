@@ -47,12 +47,11 @@ testCustomerProfile = CustomerProfile {
    customerProfile_shipTos = Nothing
   }
 
--- TODO: We've disabled the JSON tests for now
-assertEncodes :: (XmlParsable a, Eq a, Show a) => String -> a -> Assertion
-assertEncodes expectedS actual = do
-  let actualBsl = toXml actual
+assertEncodesWithOptions :: (XmlParsable a, Eq a, Show a) => XmlParseOptions ->  String -> a -> Assertion
+assertEncodesWithOptions options expectedS actual = do
+  let actualBsl = runSchemaTypeToXmlWithOptions options actual
       expectedBsl = TL.encodeUtf8 $ TL.pack expectedS
-      eExpected = fromXml expectedBsl
+      eExpected = runParseSchemaTypeWithOptions options expectedBsl
   case eExpected of
     Left e -> error $ "Error parsing '" <> expectedS <> "': " <> show e
     Right expected -> do
@@ -64,6 +63,9 @@ assertEncodes expectedS actual = do
           normalize = normalizeQuotes . stripWhitespace
       assertEqual "Encoding" (normalize expectedBsl) (normalize actualBsl)
       assertEqual "Decoding" expected actual
+
+assertEncodes :: (XmlParsable a, Eq a, Show a) => String -> a -> Assertion
+assertEncodes = assertEncodesWithOptions defaultOptions
 
 assertDecodes :: a -> String -> Assertion
 assertDecodes _ _ = return ()

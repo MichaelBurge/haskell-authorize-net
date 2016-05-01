@@ -4,6 +4,7 @@ module Test.Network.AuthorizeNet.Response (responseTests) where
 
 import Network.AuthorizeNet.Response
 import Network.AuthorizeNet.Types
+import Network.AuthorizeNet.Util
 
 import qualified Data.ByteString.Lazy as BSL
 import qualified Data.Text.Lazy as TL
@@ -456,6 +457,24 @@ test_getHostedProfilePageResponse =
       response = GetHostedProfilePageResponse Nothing testMessages Nothing $ Just "+ZeWDaUOPoQPRGTHcKd7DYbMfcAFDrhO8GPOFNt+ACzJnvkz+aWO0SYSAA9x602jAIKKfUHUt2ybwQRaG8LzHluuR5dRgsuh+kjarKvD0hpieGjLHmnz0LHmFv1Xe9P3zpmawqBCSB/d4jcSg9dAxecNBUzMwIuYzY+vGUGLUXgr9QPaRh93HqWZrV4Mbwop"
   in assertEncodes text response
 
+test_aNetApiResponse :: Assertion
+test_aNetApiResponse =
+  let text = [r|
+<?xml version="1.0" encoding="utf-8"?>
+<getCustomerProfileResponse xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns="AnetApi/xml/v1/schema/AnetApiSchema.xsd">
+  <messages>
+    <resultCode>Error</resultCode>
+    <message>
+      <code>E00040</code>
+      <text>The record cannot be found.</text>
+    </message>
+  </messages>
+</getCustomerProfileResponse>
+|]
+      messages = Messages Message_Error $ ArrayOf [ Message "E00040" "The record cannot be found." ]
+      actual = ANetApiResponse Nothing messages Nothing
+  in assertEncodesWithOptions (XmlParseOptions $ Just "getCustomerProfileResponse") text actual
+                
 responseTests :: TestTree
 responseTests = testGroup "API Responses Encode and Decode to JSON correctly" [
       testCase "authenticateTestResponse" test_authenticateTestResponse,
@@ -472,5 +491,6 @@ responseTests = testGroup "API Responses Encode and Decode to JSON correctly" [
       testCase "deleteCustomerPaymentProfileResponse" test_deleteCustomerPaymentProfileResponse,
       testCase "createCustomerProfileFromTransactionResponse" test_createCustomerProfileFromTransactionResponse,
       testCase "getHostedProfilePageResponse" test_getHostedProfilePageResponse,
-      testCase "chargeCustomerProfile" test_chargeCustomerProfile
+      testCase "chargeCustomerProfile" test_chargeCustomerProfile,
+      testCase "aNetApiResponse" test_aNetApiResponse
      ]

@@ -1,4 +1,4 @@
-{-# LANGUAGE ScopedTypeVariables #-}
+{-# LANGUAGE ScopedTypeVariables, RankNTypes #-}
 
 module Network.AuthorizeNet.Util where
 
@@ -14,8 +14,16 @@ import Text.ParserCombinators.Poly.Plain
 import Network.AuthorizeNet.Types
 
 import qualified Data.ByteString.Lazy as BSL
+import qualified Data.Text as T
 import qualified Data.Text.Lazy as TL
 import qualified Data.Text.Lazy.Encoding as TL
+
+data XmlParseOptions = XmlParseOptions {
+  xmlParseOption_overrideElementName :: Maybe String
+  } deriving (Eq, Show)
+
+defaultOptions :: XmlParseOptions
+defaultOptions = XmlParseOptions Nothing
 
 runXmlParser :: String -> XMLParser a -> BSL.ByteString -> Either String a
 runXmlParser filename parser bsl =
@@ -24,14 +32,23 @@ runXmlParser filename parser bsl =
       eElement = (\doc -> case doc of Document _ _ element _ -> element) <$> eDocument
   in fst . runParser parser . (\element -> [ CElem (element) noPos ]) =<< eElement
 
-runParseSchemaType :: forall a. XmlParsable a => BSL.ByteString -> Either String a
-runParseSchemaType bsl = do
-  result <- runXmlParser "Authorize.NET API" (parseSchemaType $ xmlParsableName (undefined :: a)) bsl
+runParseSchemaTypeWithOptions :: forall a. XmlParsable a => XmlParseOptions -> BSL.ByteString -> Either String a
+runParseSchemaTypeWithOptions options bsl = do
+  let xmlName = case xmlParseOption_overrideElementName options of
+        Nothing -> xmlParsableName (undefined :: a)
+        Just x -> x
+  result <- runXmlParser "Authorize.NET API" (parseSchemaType xmlName) bsl
   return $ (result :: a)
 
-runSchemaTypeToXml :: forall a. XmlParsable a => a -> BSL.ByteString
-runSchemaTypeToXml x =
-  let name = xmlParsableName x
+
+runParseSchemaType :: forall a. XmlParsable a => BSL.ByteString -> Either String a
+runParseSchemaType bsl = runParseSchemaTypeWithOptions defaultOptions bsl
+
+runSchemaTypeToXmlWithOptions :: forall a. XmlParsable a => XmlParseOptions -> a -> BSL.ByteString
+runSchemaTypeToXmlWithOptions options x = 
+  let name = case xmlParseOption_overrideElementName options of
+        Nothing -> xmlParsableName x
+        Just y -> y
       cons = children $ head $ schemaTypeToXML name x
       nsAttrs Namespace_none = []
       nsAttrs Namespace_xsd = [(N "xmlns", AttValue [Left "AnetApi/xml/v1/schema/AnetApiSchema.xsd"])]
@@ -44,7 +61,12 @@ runSchemaTypeToXml x =
       doc = document $ Document (Prolog (Just xmlDecl) [] Nothing []) [] (Elem (N name) (nsAttrs $ xmlNamespaceLevel x) cons ) []
   in TL.encodeUtf8 $ TL.pack $ render doc
 
+                                 
+runSchemaTypeToXml :: forall a. XmlParsable a => a -> BSL.ByteString
+runSchemaTypeToXml x = runSchemaTypeToXmlWithOptions defaultOptions x
+
 fromXml :: forall a. XmlParsable a => BSL.ByteString -> Either String a
 fromXml = runParseSchemaType
+
 toXml :: forall a. XmlParsable a => a -> BSL.ByteString
 toXml = runSchemaTypeToXml
