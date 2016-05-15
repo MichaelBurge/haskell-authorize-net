@@ -168,8 +168,9 @@ data DriversLicense = DriversLicense {
   driversLicense_dateOfBirth :: T.Text
   } deriving (Eq, Show)
 
-data BankAccountType = BankAccountType_Individual
-                     | BankAccountType_Business
+data BankAccountType = BankAccountType_checking
+                     | BankAccountType_savings
+                     | BankAccountType_businessChecking
                      deriving (Eq, Show)
 
 -- | anet:echeckTypeEnum

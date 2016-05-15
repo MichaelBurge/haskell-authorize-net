@@ -150,6 +150,107 @@ test_getCustomerProfileResponse2 =
       actual = GetCustomerProfileResponse Nothing testMessages Nothing profile Nothing
   in assertEncodes expected actual
 
+test_getCustomerProfile_MultiplePaymentMethods :: Assertion
+test_getCustomerProfile_MultiplePaymentMethods =
+  let text = [r|
+<?xml version="1.0" encoding="utf-8"?>
+  <getCustomerProfileResponse xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns="AnetApi/xml/v1/schema/AnetApiSchema.xsd">
+  <messages>
+    <resultCode>Ok</resultCode>
+    <message>
+      <code>I00001</code>
+      <text>Successful.</text>
+    </message>
+  </messages>
+  <profile>
+    <merchantCustomerId>1</merchantCustomerId>
+    <description>MichaelBurge</description>
+    <email>michaelburge@example.com</email>
+    <customerProfileId>40243901</customerProfileId>
+    <paymentProfiles>
+      <billTo>
+        <firstName>Michael</firstName>
+        <lastName>Burge</lastName>
+        <address>Example Address</address>
+        <city>Fairview</city>
+        <state>OR</state>
+        <zip>97024</zip>
+        <country>United States</country>
+        <phoneNumber>123-456-7890</phoneNumber>
+      </billTo>
+      <customerPaymentProfileId>36910106</customerPaymentProfileId>
+      <payment>
+        <bankAccount>
+          <accountType>checking</accountType>
+          <routingNumber>XXXX0220</routingNumber>
+          <accountNumber>XXXX7890</accountNumber>
+          <nameOnAccount>Michael Burge</nameOnAccount>
+          <bankName>US Bank</bankName>
+        </bankAccount>
+      </payment>
+    </paymentProfiles>
+    <paymentProfiles>
+      <billTo>
+        <firstName>Michael</firstName>
+        <lastName>Burge</lastName>
+        <address>Example Address</address>
+        <city>Fairview</city>
+        <state>OR</state>
+        <zip>97024</zip>
+        <country>United States</country>
+        <phoneNumber>123-456-7890</phoneNumber>
+      </billTo>
+      <customerPaymentProfileId>36910046</customerPaymentProfileId>
+      <payment>
+        <creditCard>
+          <cardNumber>XXXX0027</cardNumber>
+          <expirationDate>XXXX</expirationDate>
+        </creditCard>
+      </payment>
+    </paymentProfiles>
+  </profile>
+</getCustomerProfileResponse>
+|]
+      address = mkCustomerAddress {
+        customerAddress_firstName = Just "Michael",
+        customerAddress_lastName = Just "Burge",
+        customerAddress_address = Just "Example Address",
+        customerAddress_city = Just "Fairview",
+        customerAddress_state = Just "OR",
+        customerAddress_zip = Just "97024",
+        customerAddress_country = Just "United States",
+        customerAddress_phoneNumber = Just "123-456-7890"
+        }
+      profile = CustomerProfileMasked {
+        customerProfileMasked_merchantCustomerId = Just "1",
+        customerProfileMasked_description = Just "MichaelBurge",
+        customerProfileMasked_email = Just "michaelburge@example.com",
+        customerProfileMasked_customerProfileId = Just 40243901,
+        customerProfileMasked_shipToList = [],
+        customerProfileMasked_paymentProfiles = [
+          (mkCustomerPaymentProfileMasked 36910106) {
+            customerPaymentProfileMasked_customerType = Nothing,
+            customerPaymentProfileMasked_billTo = Just address,
+            customerPaymentProfileMasked_payment = Just $ PaymentMasked_bankAccount $ BankAccountMasked {
+              bankAccountMasked_accountType = Just BankAccountType_checking,
+              bankAccountMasked_routingNumber = "XXXX0220",
+              bankAccountMasked_accountNumber = "XXXX7890",
+              bankAccountMasked_nameOnAccount = "Michael Burge",
+              bankAccountMasked_bankName = Just "US Bank",
+              bankAccountMasked_echeckType = Nothing
+            }
+          },
+          (mkCustomerPaymentProfileMasked 36910046) {
+            customerPaymentProfileMasked_customerType = Nothing,
+            customerPaymentProfileMasked_billTo = Just address,
+            customerPaymentProfileMasked_customerPaymentProfileId = 36910046,
+            customerPaymentProfileMasked_payment = Just $ PaymentMasked_creditCard $ mkCreditCardMasked "XXXX0027" "XXXX"
+          }
+        ]
+      }
+      response = GetCustomerProfileResponse Nothing testMessages Nothing profile Nothing
+  in assertEncodes text response
+
 test_getCustomerProfileIdsResponse :: Assertion
 test_getCustomerProfileIdsResponse =
   let expected = [r|
@@ -490,13 +591,14 @@ test_aNetApiResponse =
       messages = Messages Message_Error $ ArrayOf [ Message "E00040" "The record cannot be found." ]
       actual = ANetApiResponse Nothing messages Nothing
   in assertEncodesWithOptions (XmlParseOptions $ Just "getCustomerProfileResponse") text actual
-                
+
 responseTests :: TestTree
 responseTests = testGroup "API Responses Encode and Decode to JSON correctly" [
       testCase "authenticateTestResponse" test_authenticateTestResponse,
       testCase "createCustomerProfileResponse" test_createCustomerProfileResponse,
       testCase "getCustomerProfileResponse" test_getCustomerProfileResponse,
       testCase "getCustomerProfileResponse2" test_getCustomerProfileResponse2,
+      testCase "getCustomerProfile_MultiplePaymentMethods" test_getCustomerProfile_MultiplePaymentMethods,
       testCase "getCustomerProfileIdsResponse" test_getCustomerProfileIdsResponse,
       testCase "updateCustomerProfileResponse" test_updateCustomerProfileResponse,
       testCase "deleteCustomerProfileResponse" test_deleteCustomerProfileResponse,
