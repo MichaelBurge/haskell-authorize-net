@@ -556,6 +556,51 @@ test_chargeCustomerProfile =
       response = CreateTransactionResponse (Just "123456") testMessages Nothing transactionResponse Nothing
   in assertEncodes text response
 
+test_chargeCustomerProfile_BankAccount :: Assertion
+test_chargeCustomerProfile_BankAccount =
+  let text = [r|
+<?xml version="1.0" encoding="utf-8"?>
+<createTransactionResponse xmlns="AnetApi/xml/v1/schema/AnetApiSchema.xsd">
+  <messages>
+    <resultCode>Ok</resultCode>
+    <message>
+      <code>I00001</code>
+      <text>Successful.</text>
+    </message>
+  </messages>
+  <transactionResponse>
+    <responseCode>1</responseCode>
+    <avsResultCode>P</avsResultCode>
+    <transId>20000482972</transId>
+    <transHash>EDD6E8D1F838AAEED90D717A7422594D</transHash>
+    <testRequest>0</testRequest>
+    <accountNumber>XXXX7890</accountNumber>
+    <entryMode>Keyed</entryMode>
+    <accountType>eCheck</accountType>
+    <messages>
+      <message>
+        <code>1</code>
+        <description>This transaction has been approved.</description>
+      </message>
+    </messages>
+  </transactionResponse>
+</createTransactionResponse>
+|]
+      transactionResponse = mkTransactionResponse {
+        transactionResponse_responseCode = Just "1",
+        transactionResponse_avsResultCode = Just "P",
+        transactionResponse_transId = Just "20000482972",
+        transactionResponse_transHash = Just "EDD6E8D1F838AAEED90D717A7422594D",
+        transactionResponse_testRequest = Just "0",
+        transactionResponse_accountNumber = Just "XXXX7890",
+        transactionResponse_entryMode = Just "Keyed",
+        transactionResponse_accountType = Just "eCheck",
+        transactionResponse_messages = Just $ ArrayOfTransactionResponseMessage $ ArrayOf $ pure $ TransactionResponse_message (Just "1") (Just "This transaction has been approved.")
+      }
+      response = CreateTransactionResponse Nothing testMessages Nothing transactionResponse Nothing
+  in do
+    assertEncodes text response
+
 test_getHostedProfilePageResponse :: Assertion
 test_getHostedProfilePageResponse =
   let text = [r|
@@ -611,5 +656,6 @@ responseTests = testGroup "API Responses Encode and Decode to JSON correctly" [
       testCase "createCustomerProfileFromTransactionResponse" test_createCustomerProfileFromTransactionResponse,
       testCase "getHostedProfilePageResponse" test_getHostedProfilePageResponse,
       testCase "chargeCustomerProfile" test_chargeCustomerProfile,
+      testCase "chargeCustomerProfile_BankAccount" test_chargeCustomerProfile_BankAccount,
       testCase "aNetApiResponse" test_aNetApiResponse
      ]

@@ -138,12 +138,13 @@ data TransactionResponse = TransactionResponse {
   transactionResponse_transHash           :: Maybe T.Text,
   transactionResponse_testRequest         :: Maybe T.Text,
   transactionResponse_accountNumber       :: Maybe T.Text,
-  transactionResponse_accountType         :: Maybe T.Text,
   transactionResponse_entryMode           :: Maybe T.Text,
+  transactionResponse_accountType         :: Maybe T.Text,
   transactionResponse_splitTenderId       :: Maybe T.Text,
   transactionResponse_prePaidCard         :: Maybe PrePaidCard,
-  -- | TODO: The Authorize.NET XSD suggests there should be a 'messages' field that holds an array of 'message' objects, but I didn't observe that in the output.
+  -- | I've observed both a <messages>(in the actual output) and a single <message> tag(in the example output).
   transactionResponse_message             :: Maybe TransactionResponse_message,
+  transactionResponse_messages            :: Maybe ArrayOfTransactionResponseMessage,
   transactionResponse_errors              :: Maybe ArrayOfTransactionResponseError,
   transactionResponse_splitTenderPayments :: Maybe ArrayOfTransactionResponseSplitTenderPayment,
   transactionResponse_userFields          :: Maybe ArrayOfUserField,
@@ -153,7 +154,7 @@ data TransactionResponse = TransactionResponse {
   } deriving (Eq, Show)
 
 mkTransactionResponse :: TransactionResponse
-mkTransactionResponse = TransactionResponse Nothing Nothing Nothing Nothing Nothing Nothing Nothing Nothing  Nothing Nothing  Nothing Nothing  Nothing Nothing  Nothing Nothing  Nothing Nothing  Nothing Nothing Nothing Nothing 
+mkTransactionResponse = TransactionResponse Nothing Nothing Nothing Nothing Nothing Nothing Nothing Nothing  Nothing Nothing  Nothing Nothing  Nothing Nothing  Nothing Nothing  Nothing Nothing  Nothing Nothing Nothing Nothing Nothing
 
 data CreateTransactionResponse = CreateTransactionResponse {
   createTransactionResponse_refId        :: Maybe T.Text,
