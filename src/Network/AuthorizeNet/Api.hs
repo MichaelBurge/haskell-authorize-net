@@ -5,6 +5,7 @@ module Network.AuthorizeNet.Api where
 import Control.Applicative
 import Control.Lens
 import Data.Char
+import Data.Monoid ((<>))
 
 import qualified Data.ByteString.Lazy as BSL
 import qualified Data.ByteString.Lazy.Search as BSLS
@@ -25,16 +26,26 @@ import Network.Wreq
 -- | The sandbox endpoint for Authorize.NET
 sandboxApiConfig :: ApiConfig
 sandboxApiConfig = ApiConfig {
-  apiConfig_baseUrl          = "https://apitest.authorize.net/xml/v1/request.api",
-  apiConfig_hostedProfileUrl = "https://test.authorize.net/profile/manage"
+  apiConfig_baseUrl              = "https://apitest.authorize.net/xml/v1/request.api",
+  apiConfig_hostedProfileUrlBase = "https://test.authorize.net/profile"
   }
 
 -- | The production endpoint for Authorize.NET
 productionApiConfig :: ApiConfig
 productionApiConfig = ApiConfig {
-  apiConfig_baseUrl          = "https://api.authorize.net/xml/v1/request.api",
-  apiConfig_hostedProfileUrl = "https://secure.authorize.net/profile/manage"
+  apiConfig_baseUrl              = "https://api.authorize.net/xml/v1/request.api",
+  apiConfig_hostedProfileUrlBase = "https://secure.authorize.net/profile"
   }
+
+getHostedProfileUrl :: ApiConfig -> CimHostedProfileForm -> T.Text
+getHostedProfileUrl apiConfig hostedProfileForm =
+  let base = apiConfig_hostedProfileUrlBase apiConfig
+  in case hostedProfileForm of
+    CimHosted_Manage -> base <> "/manage"
+    CimHosted_AddPayment -> base <> "/addPayment"
+    CimHosted_EditPayment -> base <> "/editPayment"
+    CimHosted_AddShipping -> base <> "/addShipping"
+    CimHosted_EditShipping -> base <> "/editShipping"
 
 stripBom :: BSL.ByteString -> BSL.ByteString
 stripBom bsl = case BSL.splitAt 3 bsl of

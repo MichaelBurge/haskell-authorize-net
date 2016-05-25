@@ -46,12 +46,20 @@ class XmlParsable a => ApiRequest a where
 class XmlParsable a => ApiResponse a where
   aNetApiResponse :: a -> ANetApiResponse
 
+-- | There are 5 types of hosted forms: http://developer.authorize.net/api/reference/features/customer_profiles.html
+data CimHostedProfileForm = CimHosted_Manage
+                          | CimHosted_AddPayment
+                          | CimHosted_EditPayment
+                          | CimHosted_AddShipping
+                          | CimHosted_EditShipping
+                          deriving (Eq, Show)
+
 -- | Information about the Authorize.NET API's endpoint. See 'API Endpoints' at http://developer.authorize.net/api/reference/index.html
 -- | If you had a mock of their API set up somewhere for unit tests, you would use it by creating a value of this type.
 -- | This and 'MerchantAuthentication' are required for every request
 data ApiConfig = ApiConfig {
-  apiConfig_baseUrl :: String,
-  apiConfig_hostedProfileUrl :: T.Text
+  apiConfig_baseUrl              :: String,
+  apiConfig_hostedProfileUrlBase :: T.Text
   } deriving (Show)
 
 newtype NumericString = NumericString Integer deriving (Eq, Ord, Show, Num)
