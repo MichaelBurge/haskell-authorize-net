@@ -27,14 +27,16 @@ import Network.Wreq
 sandboxApiConfig :: ApiConfig
 sandboxApiConfig = ApiConfig {
   apiConfig_baseUrl              = "https://apitest.authorize.net/xml/v1/request.api",
-  apiConfig_hostedProfileUrlBase = "https://test.authorize.net/profile"
+  apiConfig_hostedProfileUrlBase = "https://test.authorize.net/profile",
+  apiConfig_simPostUrl           = "https://test.authorize.net/gateway/transact.dll"
   }
 
 -- | The production endpoint for Authorize.NET
 productionApiConfig :: ApiConfig
 productionApiConfig = ApiConfig {
   apiConfig_baseUrl              = "https://api.authorize.net/xml/v1/request.api",
-  apiConfig_hostedProfileUrlBase = "https://secure.authorize.net/profile"
+  apiConfig_hostedProfileUrlBase = "https://secure.authorize.net/profile",
+  apiConfig_simPostUrl           = "https://secure2.authorize.net/gateway/transact.dll"
   }
 
 getHostedProfileUrl :: ApiConfig -> CimHostedProfileForm -> T.Text

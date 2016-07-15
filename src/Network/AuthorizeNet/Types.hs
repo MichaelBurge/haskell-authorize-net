@@ -59,13 +59,21 @@ data CimHostedProfileForm = CimHosted_Manage
 -- | This and 'MerchantAuthentication' are required for every request
 data ApiConfig = ApiConfig {
   apiConfig_baseUrl              :: String,
-  apiConfig_hostedProfileUrlBase :: T.Text
+  apiConfig_hostedProfileUrlBase :: T.Text,
+  apiConfig_simPostUrl           :: T.Text
   } deriving (Show)
 
 newtype NumericString = NumericString Integer deriving (Eq, Ord, Show, Num)
 
 --newtype Decimal = Decimal T.Text deriving (Eq, Show, IsString, ToJSON, FromJSON)
 newtype Decimal = Decimal T.Text deriving (Eq, Show, IsString)
+
+-- | Creates a Decimal from a number of USD cents.
+mkDecimal :: Int -> Decimal
+mkDecimal priceCents =
+  let dollars = priceCents `div` 100
+      cents   = priceCents `mod` 100
+  in Decimal $ T.pack $ show dollars ++ "." ++ show cents
 
 -- | Some Authorize.NET services in their JSON represent a single element as a single-element list, and others use an object. This type normalizes them into a list.
 data ArrayOf a = ArrayOf [a] deriving (Eq, Show, Foldable)
@@ -78,6 +86,10 @@ type ShippingProfileId = NumericString
 type SubscriptionId = NumericString
 type TransactionId = NumericString
 type TaxId = T.Text
+type MerchantCustomerId = NumericString
+type AuthCode = T.Text
+type AvsCode = T.Text
+type InvoiceNumber = Int
 
 data ArrayOfString = ArrayOfString {
   arrayOfString_string :: ArrayOf T.Text
