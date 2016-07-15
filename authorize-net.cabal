@@ -21,6 +21,7 @@ library
                      , Network.AuthorizeNet.Instances
                      , Network.AuthorizeNet.Request
                      , Network.AuthorizeNet.Response
+                     , Network.AuthorizeNet.Sim
                      , Network.AuthorizeNet.TH
                      , Network.AuthorizeNet.Types
                      , Network.AuthorizeNet.Util
