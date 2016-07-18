@@ -63,7 +63,7 @@ data ApiConfig = ApiConfig {
   apiConfig_simPostUrl           :: T.Text
   } deriving (Show)
 
-newtype NumericString = NumericString Integer deriving (Eq, Ord, Show, Num)
+newtype NumericString = NumericString { unNumericString :: Integer } deriving (Eq, Ord, Show, Num)
 
 --newtype Decimal = Decimal T.Text deriving (Eq, Show, IsString, ToJSON, FromJSON)
 newtype Decimal = Decimal T.Text deriving (Eq, Show, IsString)

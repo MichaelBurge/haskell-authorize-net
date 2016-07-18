@@ -45,21 +45,24 @@ class FormFieldCollection a where
 
 data TransactionFingerprint = TransactionFingerprint {
   transactionFingerprint_merchantAuthentication :: MerchantAuthentication,
-  transactionFingerprint_transactionId          :: Int,
+  transactionFingerprint_transactionId          :: TransactionId,
   transactionFingerprint_timestamp              :: UnixTime,
-  transactionFingerprint_priceCents             :: Int
+  transactionFingerprint_priceCents             :: Decimal
   } deriving (Eq, Show)
 
 instance FormField TransactionFingerprint where
-  renderField (TransactionFingerprint auth b c d) =
+  renderField (TransactionFingerprint auth (NumericString b) c d) =
     let a' = merchantAuthentication_name auth
         b' = T.pack $ show b
         c' = T.pack $ show $ utSeconds c
-        d' = T.pack $ show d
-        message = T.encodeUtf8 $ T.intercalate "^" $ [ a', b', c', d' ]
+        (Decimal d') = d
+        message = T.encodeUtf8 $ T.intercalate "^" $ [ a', b', c', d',"" ]
         key = T.encodeUtf8 $ merchantAuthentication_transactionKey auth
         fingerprint = hmac key message :: HMAC MD5
     in T.pack $ show $ hmacGetDigest $ fingerprint
+
+instance FormField NumericString where
+  renderField (NumericString x) = T.pack $ show x
 
 -- | See "Chapter 3: Table 7 - Custom Transaction Fingerprint Code" in http://www.authorize.net/content/dam/authorize/documents/SIM_guide.pdf
 instance FormFieldCollection TransactionFingerprint where
@@ -88,6 +91,8 @@ instance FormField PaymentMethod where
 
 data RequestSecureHostedPaymentForm = RequestSecureHostedPaymentForm {
   requestSecureHostedPaymentForm_merchantAuthentication :: MerchantAuthentication,
+  requestSecureHostedPaymentForm_transactionId          :: TransactionId,
+  requestSecureHostedPaymentForm_timestamp              :: UnixTime,
   requestSecureHostedPaymentForm_transactionType        :: TransactionType,
   requestSecureHostedPaymentForm_amount                 :: Decimal,
   -- | Either Nothing(for no relay response), or a relay url and whether it should be hit even in the case of errors.
@@ -161,7 +166,7 @@ data ResponseSecureHostedPaymentForm = ResponseSecureHostedPaymentForm {
 instance FormField LineItem where
   renderField x =
     let itemId' = T.take 31 $ lineItem_itemId x
-        name' = T.take 31 $ lineItem_itemId x
+        name' = T.take 31 $ lineItem_name x
         desc' = T.take 255 $ fromMaybe "" $ lineItem_description x
         (Decimal quant') = lineItem_quantity x
         (Decimal unitPrice') = lineItem_unitPrice x
@@ -177,7 +182,16 @@ mField x (Just y) = tell $ pure (x, MkField y)
 
 instance FormFieldCollection RequestSecureHostedPaymentForm where
   renderFields x = execWriter $ do
-    field  "x_login"            $ merchantAuthentication_name $ requestSecureHostedPaymentForm_merchantAuthentication x
+    let merchantAuthentication = requestSecureHostedPaymentForm_merchantAuthentication x
+        transactionFingerprint = TransactionFingerprint {
+          transactionFingerprint_merchantAuthentication = merchantAuthentication,
+          transactionFingerprint_transactionId = requestSecureHostedPaymentForm_transactionId x,
+          transactionFingerprint_timestamp = requestSecureHostedPaymentForm_timestamp x,
+          transactionFingerprint_priceCents = requestSecureHostedPaymentForm_amount x
+          }
+    tell $ renderFields transactionFingerprint
+      
+    field  "x_login"            $ merchantAuthentication_name merchantAuthentication
     field  "x_type"             $ requestSecureHostedPaymentForm_transactionType x
     field  "x_amount"           $ requestSecureHostedPaymentForm_amount x
     field  "x_show_form"        $ ("PAYMENT_FORM" :: T.Text)
@@ -195,4 +209,58 @@ instance FormFieldCollection RequestSecureHostedPaymentForm where
     forM_ (requestSecureHostedPaymentForm_lineItems x) $ \lineItem -> do
       field "x_line_item" lineItem
     mField "x_customer_ip" $ requestSecureHostedPaymentForm_customerIp x
-    
+
+type HtmlColor = T.Text
+type Url = T.Text
+type Font = T.Text
+
+-- | Optional fields you can add to decorate the payment field.
+data PaymentFormDecorations = PaymentFormDecorations {
+  paymentFormDecorations_returnPolicyUrl        :: Maybe Url,
+  paymentFormDecorations_headerHtmlPaymentForm  :: Maybe T.Text,
+  paymentFormDecorations_footerHtmlPaymentForm  :: Maybe T.Text,
+  paymentFormDecorations_header2HtmlPaymentForm :: Maybe T.Text,
+  paymentFormDecorations_footer2HtmlPaymentForm :: Maybe T.Text,
+  paymentFormDecorations_colorBackground        :: Maybe HtmlColor,
+  paymentFormDecorations_colorLink              :: Maybe HtmlColor,
+  paymentFormDecorations_colorText              :: Maybe HtmlColor,
+  paymentFormDecorations_logoUrl                :: Maybe Url,
+  paymentFormDecorations_backgroundUrl          :: Maybe Url,
+  paymentFormDecorations_cancelUrl              :: Maybe Url,
+  paymentFormDecorations_cancelUrlText          :: Maybe Url,
+  paymentFormDecorations_fontFamily             :: Maybe Font,
+  paymentFormDecorations_fontSize               :: Maybe T.Text,
+  paymentFormDecorations_sectionHead1Color      :: Maybe HtmlColor,
+  paymentFormDecorations_sectionHead1FontFamily :: Maybe Font,
+  paymentFormDecorations_sectionHead1FontSize   :: Maybe T.Text,
+  paymentFormDecorations_sectionHead1FontBold   :: Maybe Bool,
+  paymentFormDecorations_sectionHead1FontItalic :: Maybe Bool
+  } deriving (Eq, Show)
+
+defaultPaymentFormDecorations :: PaymentFormDecorations
+defaultPaymentFormDecorations = PaymentFormDecorations Nothing Nothing Nothing Nothing Nothing Nothing Nothing Nothing Nothing Nothing Nothing Nothing Nothing Nothing Nothing Nothing Nothing Nothing Nothing
+                              
+instance FormFieldCollection PaymentFormDecorations where
+  renderFields x = execWriter $ do
+    mField "x_return_policy_url" $ paymentFormDecorations_returnPolicyUrl x
+    mField "x_header_html_payment_form" $ paymentFormDecorations_headerHtmlPaymentForm x
+    mField "x_footer_html_payment_form" $ paymentFormDecorations_footerHtmlPaymentForm x
+    mField "x_header2_html_payment_form" $ paymentFormDecorations_header2HtmlPaymentForm x
+    mField "x_footer2_html_payment_form" $ paymentFormDecorations_footer2HtmlPaymentForm x
+    mField "x_color_background" $ paymentFormDecorations_colorBackground x
+    mField "x_color_link" $ paymentFormDecorations_colorLink x     
+    mField "x_color_text" $ paymentFormDecorations_colorText x           
+    mField "x_logo_url" $ paymentFormDecorations_logoUrl x           
+    mField "x_background_url" $ paymentFormDecorations_backgroundUrl x
+    mField "x_cancel_url" $ paymentFormDecorations_cancelUrl x       
+    mField "x_cancel_url_text" $ paymentFormDecorations_cancelUrlText x
+    mField "x_font_family" $ paymentFormDecorations_fontFamily x       
+    mField "x_font_size" $ paymentFormDecorations_fontSize x          
+    mField "x_sectionhead1_color_text" $ paymentFormDecorations_sectionHead1Color x
+    mField "x_sectionhead1_font_family" $ paymentFormDecorations_sectionHead1FontFamily x
+    mField "x_sectionhead1_font_size" $ paymentFormDecorations_sectionHead1FontSize x
+    mField "x_sectionhead1_font_bold" $ paymentFormDecorations_sectionHead1FontBold x
+    mField "x_sectionhead1_font_italic" $ paymentFormDecorations_sectionHead1FontItalic x
+
+runRenderFields :: [(T.Text, AnyFormField)] -> [(T.Text, T.Text)]
+runRenderFields xs = map (\(a,MkField b) -> (a, renderField b)) xs
